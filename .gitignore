@@ -2,3 +2,4 @@
 *.py[cod]
 .qs_env
 *.sublime-project
+temp/*

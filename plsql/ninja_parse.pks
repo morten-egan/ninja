@@ -39,8 +39,12 @@ as
 		, requirements			pg_requirements
 	);
 
+	/** This procedure will validate the unzipped ninja package. It will check all requirements.
+	* @author Morten Egan
+	* @param npg The full ninja package
+	*/
 	procedure validate_package (
-		npg						ninja_package
+		npg						in out				ninja_package
 	);
 
 end ninja_parse;
