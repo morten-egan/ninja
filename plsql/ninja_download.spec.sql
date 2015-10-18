@@ -19,7 +19,7 @@ as
 		, package_version					in				varchar2 default null
 		, repository						in				varchar2
 	)
-	return varchar2;
+	return blob;
 
 end ninja_download;
 /

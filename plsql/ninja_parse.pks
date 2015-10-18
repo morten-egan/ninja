@@ -37,6 +37,16 @@ as
 		, npg_meta				ninja_meta
 		, package_meta			pg_meta
 		, requirements			pg_requirements
+		, npg_files				pg_files
+	);
+
+	/** Will take the binary npg file, and extract to an npg package
+	* @author Morten Egan
+	* @param npg_binary The binary npg file that we are installing
+	*/
+	procedure unpack_binary_npg (
+		npg_binary						in				blob
+		npg								in out			ninja_package
 	);
 
 	/** This procedure will validate the unzipped ninja package. It will check all requirements.

@@ -72,7 +72,7 @@ as
 		, package_version					in				varchar2 default null
 		, repository						in				varchar2
 	)
-	return varchar2
+	return blob
 	
 	as
 	
@@ -106,8 +106,7 @@ as
 
 		if l_returned_checksum is not null then
 			-- Finally we download the binary npg to the temp area
-			-- Maybe do this instead: l_blob := HTTPURITYPE.createuri(p_url).getblob();
-			l_ret_val := binary_from_url_to_temp(l_url);
+			l_ret_val := HTTPURITYPE.createuri(l_url).getblob();
 		end if;
 	
 		dbms_application_info.set_action(null);

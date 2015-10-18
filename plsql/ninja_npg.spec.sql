@@ -29,6 +29,18 @@ as
 	*/
 	procedure update_p (
 		package_name						in				varchar2
+		, package_version					in				varchar2 default null
+		, repository						in				varchar2 default null
+	);
+
+	/** Delete package using the ninja package manager.
+	* @author Morten Egan
+	* @param package_name The name of the package to delete.
+	* @param force_delete Yes to force delete even though there are dependencies. Defaults to No.
+	*/
+	procedure delete_p (
+		package_name						in				varchar2
+		, force_delete						in				varchar2 default 'no'
 	);
 
 end ninja_npg;
