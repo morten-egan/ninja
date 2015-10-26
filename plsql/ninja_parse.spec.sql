@@ -46,7 +46,7 @@ as
 	*/
 	procedure unpack_binary_npg (
 		npg_binary						in				blob
-		npg								in out			ninja_package
+		, npg							in out			ninja_package
 	);
 
 	/** This procedure will validate the unzipped ninja package. It will check all requirements.

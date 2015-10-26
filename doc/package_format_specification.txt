@@ -24,11 +24,3 @@ asdf.pks: df77692a4b1eca60ae3e05c122056cc3
 asdf.pkb: 3f3b9a90423f7ce2c016fc84ec0eb02c
 qwer.pks: 2e235fb0b6f9afebeb85a826805e33ec
 qwer.pkb: 5ea4045d396518cbfabc9f0cb22e65f7
-[df77692a4b1eca60ae3e05c122056cc3]
-base64offile
-[3f3b9a90423f7ce2c016fc84ec0eb02c]
-base64offile
-[2e235fb0b6f9afebeb85a826805e33ec]
-base64offile
-[5ea4045d396518cbfabc9f0cb22e65f7]
-base64offile

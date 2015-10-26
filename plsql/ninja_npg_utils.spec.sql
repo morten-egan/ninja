@@ -19,5 +19,14 @@ as
 	)
 	return boolean;
 
+	/** Convert a blob to clob
+	* @author Morten Egan
+	* @param bin_blob The blob to conver to a clob
+	*/
+	function blob_to_clob (
+		bin_blob						in				blob
+	)
+	return clob;
+
 end ninja_npg_utils;
 /
