@@ -73,6 +73,44 @@ as
 	
 	end check_install_status;
 
+	function split_string (
+		string_to_split						in				varchar2
+		, delimiter							in				varchar2 default ','
+	)
+	return tab_strings
+	pipelined
+	
+	as
+	
+		cursor c_tokenizer(ci_string in varchar2, ci_delimiter in varchar2) is
+			select 
+				regexp_substr(str, '[^' || ci_delimiter || ']+', 1, level) as splitted_element,
+				level as element_no
+			from 
+				(select rownum as id, ci_string str from dual)
+			connect by instr(str, ci_delimiter, 1, level - 1) > 0
+			and id = prior id
+			and prior dbms_random.value is not null;
+	
+	begin
+	
+		dbms_application_info.set_action('split_string');
+
+		for c1 in c_tokenizer(string_to_split, delimiter) loop
+			pipe row(c1.splitted_element);
+		end loop;
+	
+		dbms_application_info.set_action(null);
+	
+		return;
+	
+		exception
+			when others then
+				dbms_application_info.set_action(null);
+				raise;
+	
+	end split_string;
+
 begin
 
 	dbms_application_info.set_client_info('ninja_npg_utils');

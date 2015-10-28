@@ -9,6 +9,9 @@ as
 	*/
 	p_version		varchar2(50) := '0.0.1';
 
+	-- Types and objects
+	type tab_strings is table of varchar2(1000);
+
 	/** Check if package already is installed in the schema
 	* @author Morten Egan
 	* @param package_name The package we are checking for
@@ -27,6 +30,17 @@ as
 		bin_blob						in				blob
 	)
 	return clob;
+
+	/** Table function to return a delimited string as individual rows
+	* @author Morten Egan
+	* @param string_to_split The string to split
+	*/
+	function split_string (
+		string_to_split						in				varchar2
+		, delimiter							in				varchar2 default ','
+	)
+	return tab_strings
+	pipelined;
 
 end ninja_npg_utils;
 /
