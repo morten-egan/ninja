@@ -62,6 +62,44 @@ as
 	
 	end db_version_check;
 
+	function sys_priv_check (
+		sys_priv						in				varchar2
+	)
+	return boolean
+	
+	as
+	
+		l_ret_val			boolean := false;
+		l_priv_count		pls_integer := 0;
+	
+	begin
+	
+		dbms_application_info.set_action('sys_priv_check');
+
+		select
+			count(*)
+		into
+			l_priv_count
+		from
+			session_privs
+		where
+			privilege = upper(sys_priv);
+
+		if l_priv_count > 0 then
+			l_ret_val := true;
+		end if;
+	
+		dbms_application_info.set_action(null);
+	
+		return l_ret_val;
+	
+		exception
+			when others then
+				dbms_application_info.set_action(null);
+				raise;
+	
+	end sys_priv_check;
+
 begin
 
 	dbms_application_info.set_client_info('ninja_validate');

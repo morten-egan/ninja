@@ -27,5 +27,15 @@ as
 	)
 	return boolean;
 
+	/** Check if a required sys privilege is available
+	* @author Morten Egan
+	* @param sys_priv The sys privilege to check for
+	* @return boolean Returns true if sys privilege is granted, False if not
+	*/
+	function sys_priv_check (
+		sys_priv						in				varchar2
+	)
+	return boolean;
+
 end ninja_validate;
 /
