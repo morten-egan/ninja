@@ -37,5 +37,17 @@ as
 	)
 	return boolean;
 
+	/** Check if an object is valid. This is used during installation of packages
+	* @author Morten Egan
+	* @param obj_name The name of the object
+	* @param obj_type The type of the object
+	* @return boolean True if object is valid, false if not
+	*/
+	function object_is_valid (
+		obj_name						in				varchar2
+		, obj_type						in				varchar2
+	)
+	return boolean;
+
 end ninja_validate;
 /

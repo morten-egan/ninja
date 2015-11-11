@@ -106,7 +106,7 @@ as
 
 		if l_returned_checksum is not null then
 			-- Finally we download the binary npg to the temp area
-			l_ret_val := HTTPURITYPE.createuri(l_url).getblob();
+			l_ret_val := httpuritype.createuri(l_url).getblob();
 		end if;
 	
 		dbms_application_info.set_action(null);

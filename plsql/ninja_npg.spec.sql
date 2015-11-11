@@ -7,7 +7,12 @@ as
 	* @version 0.0.1
 	* @project NINJA
 	*/
-	p_version		varchar2(50) := '0.0.1';
+	p_version			varchar2(50) := '0.0.1';
+
+	-- Version split out
+	version_major		number := 0;
+	version_minor		number := 0;
+	version_fix			number := 1;
 
 	/** Install package using the ninja package manager.
 	* @author Morten Egan

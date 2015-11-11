@@ -17,18 +17,21 @@ as
 	
 		dbms_application_info.set_action('install_p');
 
-		-- pipe row(action_stat_out('1', 'INFO', '-- Installing package: ' || package_name));
 		-- First we check if the package is already installed, and if it is
 		-- inform that we should be using update instead.
 		if not ninja_npg_utils.check_install_status(package_name) then
 			-- We are ok to install
 			-- Download binary to start the process
-			-- pipe row(action_stat_out('2', 'INFO', '-- Starting download of ' || package_name));
 			l_ninja_binary := ninja_download.get_npg(package_name, package_version, repository);
-			-- pipe row(action_stat_out('3', 'INFO', '--   Download complete'));
+			-- Unpack the spec file into the npg type
+			ninja_parse.unpack_binary_npg(l_ninja_binary, l_ninja_npg);
+			-- Now the spec file is unpackd, and we have the basic npg structure.
+			-- Let us validate requirements
+			ninja_parse.validate_package(l_ninja_npg);
+			-- Requirements are validated. Let us install the package
+			ninja_compile.compile_npg(l_ninja_npg);
 		else
 			-- Already installed. Use update instead
-			-- pipe row(action_stat_out(2, 'WARNING', '--  ' || package_name || ' is already installed. Please use update if newer version exists'));
 			null;
 		end if;
 
@@ -54,9 +57,6 @@ as
 	begin
 	
 		dbms_application_info.set_action('update_p');
-
-		-- pipe row(action_stat_out('1', 'DECORATE', '------------------------------'));
-		-- pipe row(action_stat_out('1', 'INFO', '-- Updating package: ' || package_name));
 	
 		dbms_application_info.set_action(null);
 	
@@ -79,9 +79,6 @@ as
 	begin
 	
 		dbms_application_info.set_action('delete_p');
-
-		-- pipe row(action_stat_out('1', 'DECORATE', '------------------------------'));
-		-- pipe row(action_stat_out('1', 'INFO', '-- Deleting package: ' || package_name));
 	
 		dbms_application_info.set_action(null);
 	

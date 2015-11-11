@@ -48,8 +48,8 @@ as
 	
 		dbms_application_info.set_action('db_version_check');
 
-		chk_stmt := 'select dbms_db_version.'|| db_version_met ||' from dual';
-		execute immediate chk_stmt into l_ret_val;
+		chk_stmt := 'begin :b1 := dbms_db_version.'|| db_version_met ||'; end;';
+		execute immediate chk_stmt using in out l_ret_val;
 	
 		dbms_application_info.set_action(null);
 	
@@ -99,6 +99,42 @@ as
 				raise;
 	
 	end sys_priv_check;
+
+	function object_is_valid (
+		obj_name						in				varchar2
+		, obj_type						in				varchar2
+	)
+	return boolean
+	
+	as
+	
+		l_ret_val			boolean := false;
+		l_obj_status		varchar2(50);
+	
+	begin
+	
+		dbms_application_info.set_action('object_is_valid');
+
+		select status
+		into l_obj_status
+		from user_objects
+		where object_name = upper(obj_name)
+		and object_type = upper(obj_type);
+
+		if l_obj_status = 'VALID' then
+			l_ret_val := true;
+		end if;
+	
+		dbms_application_info.set_action(null);
+	
+		return l_ret_val;
+	
+		exception
+			when others then
+				dbms_application_info.set_action(null);
+				raise;
+	
+	end object_is_valid;
 
 begin
 

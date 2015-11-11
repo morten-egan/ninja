@@ -6,10 +6,12 @@ as
 		npg_version_major		number
 		, npg_version_minor		number
 		, npg_version_fix		number
+		, npg_format			varchar2(150)
 	);
 
 	type pg_meta is record (
 		pg_name					varchar2(1024)
+		, pg_author				varchar2(1024)
 		, pg_version_major		number
 		, pg_version_minor		number
 		, pg_version_fix		number
@@ -17,6 +19,7 @@ as
 		, pg_description		varchar2(4000)
 		, pg_url_doc			varchar2(1024)
 		, pg_key				varchar2(4000)
+		, pg_order_file			number
 	);
 
 	type pg_require is record (
@@ -55,6 +58,11 @@ as
 	*/
 	procedure validate_package (
 		npg						in out				ninja_package
+	);
+
+	procedure parse_spec_file (
+		spec_file						in				clob
+		, npg							in out			ninja_package
 	);
 
 end ninja_parse;

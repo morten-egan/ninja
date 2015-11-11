@@ -20,9 +20,43 @@ as
 		l_met_end						boolean := false;
 		l_current_block					varchar2(50);
 
+		-- For line parsing
+		l_line_name						varchar2(100);
+		l_line_value					varchar2(4000);
+		l_requirements					pg_requirements;
+		l_requirements_idx				pls_integer := 1;
+		l_files							pg_files;
+		l_files_idx						pls_integer := 1;
+
+		-- For required fields
+		type l_bool_table				is table of boolean index by varchar2(50);
+		l_required_parsed				l_bool_table;
+		l_required_idx					varchar2(50);
+
+		-- Exception
+		missing_required				exception;
+		pragma							exception_init(missing_required, -20001);
+
 	begin
 	
 		dbms_application_info.set_action('parse_spec_file');
+
+		-- Set required fields to false
+		l_required_parsed('options') := false;
+			-- Options sub fields
+			l_required_parsed('ninjaversion') := false;
+			l_required_parsed('ninjaformat') := false;
+		l_required_parsed('metadata') := false;
+			-- Metadata sub fields
+			l_required_parsed('name') := false;
+			l_required_parsed('version') := false;
+			l_required_parsed('description') := false;
+			l_required_parsed('author') := false;
+			l_required_parsed('key') := false;
+		l_required_parsed('require') := false;
+			-- Require sub fields
+			l_required_parsed('ordbms') := false;
+		l_required_parsed('files') := false;
 
 		-- Loop over all lines
 		while l_offset < l_len loop
@@ -46,16 +80,66 @@ as
 					if substr(buf,1,1) = '[' then
 						-- We are in a new block, set it to current
 						l_current_block := substr(buf, 2, instr(buf,']')-2);
+						l_required_parsed(l_current_block) := true;
 					else
 						-- Parse line based on current block
+						l_line_name := substr(buf, 1, instr(buf,':') - 1);
+						l_line_value := ltrim(substr(buf, instr(buf,':') + 1));
 						if l_current_block = 'options' then
-							null;
+							if l_line_name = 'ninjaversion' then
+								for vers in (select rownum, column_value from table(ninja_npg_utils.split_string(l_line_value, '.'))) loop
+									if vers.rownum = 1 then
+										npg.npg_meta.npg_version_major := vers.column_value;
+									elsif vers.rownum = 2 then
+										npg.npg_meta.npg_version_minor := vers.column_value;
+									elsif vers.rownum = 3 then
+										npg.npg_meta.npg_version_fix := vers.column_value;
+									end if;
+								end loop;
+								l_required_parsed('ninjaversion') := true;
+							elsif l_line_name = 'ninjaformat' then
+								npg.npg_meta.npg_format := l_line_value;
+								l_required_parsed('ninjaformat') := true;
+							end if;
 						elsif l_current_block = 'metadata' then
-							null;
+							if l_line_name = 'name' then
+								npg.package_meta.pg_name := l_line_value;
+								l_required_parsed('name') := true;
+							elsif l_line_name = 'description' then
+								npg.package_meta.pg_description := l_line_value;
+								l_required_parsed('description') := true;
+							elsif l_line_name = 'author' then
+								npg.package_meta.pg_author := l_line_value;
+								l_required_parsed('author') := true;
+							elsif l_line_name = 'key' then
+								npg.package_meta.pg_key := l_line_value;
+								l_required_parsed('key') := true;
+							elsif l_line_name = 'version' then
+								for vers in (select rownum, column_value from table(ninja_npg_utils.split_string(l_line_value, '.'))) loop
+									if vers.rownum = 1 then
+										npg.package_meta.pg_version_major := vers.column_value;
+									elsif vers.rownum = 2 then
+										npg.package_meta.pg_version_minor := vers.column_value;
+									elsif vers.rownum = 3 then
+										npg.package_meta.pg_version_fix := vers.column_value;
+									end if;
+								end loop;
+								l_required_parsed('version') := true;
+							end if;
 						elsif l_current_block = 'require' then
-							null;
+							l_requirements(l_requirements_idx).require_type := l_line_name;
+							l_requirements(l_requirements_idx).require_value := l_line_value;
+							if l_line_name = 'ordbms' then
+								l_required_parsed('ordbms') := true;
+							end if;
+							l_requirements_idx := l_requirements_idx + 1;
 						elsif l_current_block = 'files' then
-							null;
+							l_files(l_files_idx).file_name := l_line_name;
+							l_files(l_files_idx).file_type := l_line_value;
+							if l_line_name = 'install.order' then
+								npg.package_meta.pg_order_file := 1;
+							end if;
+							l_files_idx := l_files_idx + 1;
 						end if;
 					end if;
 				end if;
@@ -67,6 +151,19 @@ as
 					l_met_start := true;
 				end if;
 			end if;
+		end loop;
+
+		-- Set the list of requirements and files
+		npg.requirements := l_requirements;
+		npg.npg_files := l_files;
+
+		-- Check that all required fields are present in the spec file
+		l_required_idx := l_required_parsed.first;
+		while l_required_idx is not null loop
+			if not l_required_parsed(l_required_idx) then
+				raise_application_error(-20001, 'Missing field in npg.spec: ' || l_required_idx);
+			end if;
+			l_required_idx := l_required_parsed.next(l_required_idx);
 		end loop;
 	
 		dbms_application_info.set_action(null);
@@ -85,8 +182,8 @@ as
 	
 	as
 
-		npg_file_list					zip_util_pkg.t_file_list;
 		spec_file						clob;
+		l_individual_file				blob;
 		unpack_error					exception;
 		pragma							exception_init(unpack_error, -20001);
 	
@@ -104,6 +201,17 @@ as
 
 		-- Spec file is there, so let us parse it.
 		parse_spec_file(spec_file, npg);
+
+		-- Now the spec file is parsed and field validated.
+		-- Let us unpack all the file content
+		for i in 1..npg.npg_files.count() loop
+			l_individual_file := zip_util_pkg.get_file(npg_binary, npg.npg_files(i).file_name);
+			if l_individual_file is not null then
+				npg.npg_files(i).file_content := ninja_npg_utils.blob_to_clob(l_individual_file);
+			else
+				raise_application_error(-20001, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
+			end if;
+		end loop;
 	
 		dbms_application_info.set_action(null);
 	
@@ -119,10 +227,27 @@ as
 	)
 	
 	as
+
+		validation_error				exception;
+		pragma							exception_init(validation_error, -20001);
 	
 	begin
 	
 		dbms_application_info.set_action('validate_package');
+
+		-- Let us go through all the requirements one-by-one
+		for i in 1..npg.requirements.count() loop
+			if npg.requirements(i).require_type = 'privilege' then
+				dbms_output.put_line('Checking: ' || npg.requirements(i).require_value);
+				if not ninja_validate.sys_priv_check(npg.requirements(i).require_value) then
+					raise_application_error(-20001, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
+				end if;
+			elsif npg.requirements(i).require_type = 'ordbms' then
+				if ninja_validate.db_version_check(npg.requirements(i).require_value) then
+					raise_application_error(-20001, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
+				end if;
+			end if;
+		end loop;
 	
 		dbms_application_info.set_action(null);
 	
