@@ -30,6 +30,8 @@ as
 			ninja_parse.validate_package(l_ninja_npg);
 			-- Requirements are validated. Let us install the package
 			ninja_compile.compile_npg(l_ninja_npg);
+			-- Sources are installed successfully. Register installed package
+			ninja_register.register_install(l_ninja_npg);
 		else
 			-- Already installed. Use update instead
 			null;

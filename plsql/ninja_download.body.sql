@@ -88,26 +88,19 @@ as
 		-- First check if we have set the version and repository.
 		-- If not, we use the latest version and use the default repository
 		if repository is null then
-			l_url := 'http://npg.plsql.ninja/bin/npg?m=';
+			l_url := 'http://plsql.ninja/npg/bin.npg?m=';
 		else
-			l_url := repository;
+			l_url := repository || '/bin.npg?m=';
 		end if;
-
-		l_url_checksum := l_url || 'c' || '&n=' || utl_url.escape(package_name);
-		l_url := l_url || 'd' || '&n=' || utl_url.escape(package_name);
 
 		if package_version is not null then
-			l_url := l_url || '&v=' || utl_url.escape(package_version);
+			l_url := l_url || utl_url.escape(package_name || '@' || package_version);
+		else
+			l_url := l_url || utl_url.escape(package_name);
 		end if;
 
-		-- Now we query the repository for the package
-		-- We get the checksum as return if it exists.
-		l_returned_checksum := utl_http.request(l_url_checksum);
-
-		if l_returned_checksum is not null then
-			-- Finally we download the binary npg to the temp area
-			l_ret_val := httpuritype.createuri(l_url).getblob();
-		end if;
+		-- Finally we download the binary npg to the temp area
+		l_ret_val := httpuritype.createuri(l_url).getblob();
 	
 		dbms_application_info.set_action(null);
 	

@@ -24,11 +24,13 @@ create table ninja_repos_contents_cache (
 );
 
 create table ninja_installed_packages (
-	package_name				varchar2(100)		constraint ninja_install_pkg_name_nn not null
+	npg_name					varchar2(100)		constraint ninja_install_pkg_name_nn not null
 	, installed_schema			varchar2(100)		constraint ninja_install_pkg_schema_nn not null
 	, installed_hash			varchar2(100)		constraint ninja_install_pkg_hash_nn not null
-	, installed_version			varchar2(20)		constraint ninja_install_pkg_version_nn not null
+	, pg_version				varchar2(20)		constraint ninja_install_pkg_version_nn not null
 	, install_date				date				constraint ninja_install_pkg_date_nn not null
+	, pg_author					varchar2(200)		constraint ninja_install_pkg_author_nn not null
+	, upgrade_date				date				
 );
 
 create table ninja_package_temp (
