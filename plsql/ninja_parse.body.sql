@@ -1,32 +1,32 @@
 create or replace package body ninja_parse
 
 as
-	
+
 	procedure parse_spec_file (
-		spec_file						in				clob
-		, npg							in out			ninja_package
+		spec_file						in					clob
+		, npg								in out			ninja_package
 	)
-	
+
 	as
 
 		-- For looping lines
-		l_offset						number := 1;
-		l_amount						number;
-		l_len							number := dbms_lob.getlength(spec_file);
-		buf								varchar2(32767);
+		l_offset								number := 1;
+		l_amount								number;
+		l_len										number := dbms_lob.getlength(spec_file);
+		buf											varchar2(32767);
 
 		-- For parse control
-		l_met_start						boolean := false;
-		l_met_end						boolean := false;
+		l_met_start							boolean := false;
+		l_met_end								boolean := false;
 		l_current_block					varchar2(50);
 
 		-- For line parsing
-		l_line_name						varchar2(100);
-		l_line_value					varchar2(4000);
+		l_line_name							varchar2(100);
+		l_line_value						varchar2(4000);
 		l_requirements					pg_requirements;
-		l_requirements_idx				pls_integer := 1;
-		l_files							pg_files;
-		l_files_idx						pls_integer := 1;
+		l_requirements_idx			pls_integer := 1;
+		l_files									pg_files;
+		l_files_idx							pls_integer := 1;
 
 		-- For required fields
 		type l_bool_table				is table of boolean index by varchar2(50);
@@ -35,27 +35,27 @@ as
 
 		-- Exception
 		missing_required				exception;
-		pragma							exception_init(missing_required, -20001);
+		pragma									exception_init(missing_required, -20001);
 
 	begin
-	
+
 		dbms_application_info.set_action('parse_spec_file');
 
 		-- Set required fields to false
 		l_required_parsed('options') := false;
-			-- Options sub fields
-			l_required_parsed('ninjaversion') := false;
-			l_required_parsed('ninjaformat') := false;
+		-- Options sub fields
+		l_required_parsed('ninjaversion') := false;
+		l_required_parsed('ninjaformat') := false;
 		l_required_parsed('metadata') := false;
-			-- Metadata sub fields
-			l_required_parsed('name') := false;
-			l_required_parsed('version') := false;
-			l_required_parsed('description') := false;
-			l_required_parsed('author') := false;
-			l_required_parsed('key') := false;
+		-- Metadata sub fields
+		l_required_parsed('name') := false;
+		l_required_parsed('version') := false;
+		l_required_parsed('description') := false;
+		l_required_parsed('author') := false;
+		l_required_parsed('key') := false;
 		l_required_parsed('require') := false;
-			-- Require sub fields
-			l_required_parsed('ordbms') := false;
+		-- Require sub fields
+		l_required_parsed('ordbms') := false;
 		l_required_parsed('files') := false;
 
 		-- Loop over all lines
@@ -165,30 +165,30 @@ as
 			end if;
 			l_required_idx := l_required_parsed.next(l_required_idx);
 		end loop;
-	
+
 		dbms_application_info.set_action(null);
-	
+
 		exception
 			when others then
 				dbms_application_info.set_action(null);
 				raise;
-	
+
 	end parse_spec_file;
 
 	procedure unpack_binary_npg (
-		npg_binary						in				blob
-		, npg							in out			ninja_package
+		npg_binary						in					blob
+		, npg									in out			ninja_package
 	)
-	
+
 	as
 
-		spec_file						clob;
-		l_individual_file				blob;
-		unpack_error					exception;
-		pragma							exception_init(unpack_error, -20001);
-	
+		spec_file									clob;
+		l_individual_file					blob;
+		unpack_error							exception;
+		pragma										exception_init(unpack_error, -20001);
+
 	begin
-	
+
 		dbms_application_info.set_action('unpack_binary_npg');
 
 		-- Extract the spec file from the package file, and parse that
@@ -212,33 +212,32 @@ as
 				raise_application_error(-20001, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
 			end if;
 		end loop;
-	
+
 		dbms_application_info.set_action(null);
-	
+
 		exception
 			when others then
 				dbms_application_info.set_action(null);
 				raise;
-	
+
 	end unpack_binary_npg;
 
 	procedure validate_package (
 		npg						in out				ninja_package
 	)
-	
+
 	as
 
 		validation_error				exception;
-		pragma							exception_init(validation_error, -20001);
-	
+		pragma									exception_init(validation_error, -20001);
+
 	begin
-	
+
 		dbms_application_info.set_action('validate_package');
 
 		-- Let us go through all the requirements one-by-one
 		for i in 1..npg.requirements.count() loop
 			if npg.requirements(i).require_type = 'privilege' then
-				dbms_output.put_line('Checking: ' || npg.requirements(i).require_value);
 				if not ninja_validate.sys_priv_check(npg.requirements(i).require_value) then
 					raise_application_error(-20001, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
 				end if;
@@ -246,16 +245,20 @@ as
 				if ninja_validate.db_version_check(npg.requirements(i).require_value) then
 					raise_application_error(-20001, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
 				end if;
+			/*elsif npg.requirements(i).require_type = 'feature' then
+				if not ninja_validate.option_is_enabled(npg.requirements(i).require_value) then
+					raise_application_error(-20001, 'Feature: ' || npg.requirements(i).require_value || ' not enabled.');
+				end if;*/
 			end if;
 		end loop;
-	
+
 		dbms_application_info.set_action(null);
-	
+
 		exception
 			when others then
 				dbms_application_info.set_action(null);
 				raise;
-	
+
 	end validate_package;
 
 begin

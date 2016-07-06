@@ -14,7 +14,7 @@ as
 	* @param object_name The name of the object to check if it exists
 	*/
 	function obj_already_exist (
-		object_name						in				varchar2
+		object_name								in				varchar2
 	)
 	return boolean;
 
@@ -33,7 +33,7 @@ as
 	* @return boolean Returns true if sys privilege is granted, False if not
 	*/
 	function sys_priv_check (
-		sys_priv						in				varchar2
+		sys_priv									in				varchar2
 	)
 	return boolean;
 
@@ -44,8 +44,18 @@ as
 	* @return boolean True if object is valid, false if not
 	*/
 	function object_is_valid (
-		obj_name						in				varchar2
-		, obj_type						in				varchar2
+		obj_name									in				varchar2
+		, obj_type								in				varchar2
+	)
+	return boolean;
+
+	/** Check if a specific option is enabled in the database.
+	* @author Morten Egan
+	* @param opt_name The name of the option to check.
+	* @return boolean True if the option is enabled, false if not.
+	*/
+	function option_is_enabled (
+		opt_name									in				varchar2
 	)
 	return boolean;
 

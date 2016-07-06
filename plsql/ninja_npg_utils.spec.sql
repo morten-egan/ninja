@@ -27,7 +27,7 @@ as
 	* @param bin_blob The blob to conver to a clob
 	*/
 	function blob_to_clob (
-		bin_blob						in				blob
+		bin_blob								in				blob
 	)
 	return clob;
 
@@ -36,7 +36,7 @@ as
 	* @param string_to_split The string to split
 	*/
 	function split_string (
-		string_to_split						in				varchar2
+		string_to_split					in				varchar2
 		, delimiter							in				varchar2 default ','
 	)
 	return tab_strings

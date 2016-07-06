@@ -15,9 +15,9 @@ as
 	* @param file_id The index id of the file to install
 	* @return boolean True if installation is successfull, False if not
 	*/
-	function compile_file (
-		npg						in out				ninja_parse.ninja_package
-		, file_id				in					number
+	function compile_file_id (
+		npg							in out				ninja_parse.ninja_package
+		, file_id				in						number
 	)
 	return boolean;
 
@@ -27,9 +27,9 @@ as
 	* @param file_name The name of the file to install
 	* @return boolean True if installation is successfull, False if not
 	*/
-	function compile_file (
-		npg						in out				ninja_parse.ninja_package
-		, file_name				in					varchar2
+	function compile_file_name (
+		npg							in out				ninja_parse.ninja_package
+		, file_name			in						varchar2
 	)
 	return boolean;
 
@@ -38,7 +38,7 @@ as
 	* @param npg The npg record
 	*/
 	procedure compile_npg (
-		npg						in out				ninja_parse.ninja_package
+		npg							in out				ninja_parse.ninja_package
 	);
 
 end ninja_compile;

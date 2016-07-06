@@ -16,7 +16,7 @@ as
 	*/
 	function get_npg (
 		package_name						in				varchar2
-		, package_version					in				varchar2 default null
+		, package_version				in				varchar2 default null
 		, repository						in				varchar2
 	)
 	return blob;
