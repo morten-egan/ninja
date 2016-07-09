@@ -81,7 +81,15 @@ as
 	as
 
 		type ordered_install is table of varchar2(512) index by pls_integer;
-		l_ret_val			boolean;
+		l_ret_val					boolean;
+		l_file_name				varchar2(256);
+		l_file_type				varchar2(256);
+
+		-- For looping lines
+		l_offset					number := 1;
+		l_amount					number;
+		l_len							number;
+		buf								varchar2(32767);
 
 	begin
 
@@ -95,8 +103,26 @@ as
 					-- Let us parse the installation order from this file.
 					-- Please note, at current no check will done to see if install.order file
 					-- list all files contained in the package.
-					null;
+					-- Loop over every line in the file
+					l_len := dbms_lob.getlength(npg.npg_files(i).file_content);
+					while l_offset < l_len loop
+						l_amount := least(dbms_lob.instr(npg.npg_files(i).file_content, chr(10), l_offset) - l_offset, 32767);
+						if l_amount > 0 then
+							dbms_lob.read(npg.npg_files(i).file_content, l_amount, l_offset, buf);
+							l_offset := l_offset + l_amount + 1;
+						else
+							buf := null;
+							l_offset := l_offset + 1;
+						end if;
+						if buf is not null then
+							l_file_name := substr(buf, 1, instr(buf,':') - 1);
+							l_file_type := ltrim(substr(buf, instr(buf,':') + 1));
+							-- Now we have the required info to compile the file.
+							dbms_output.put_line('Compiling: ' || l_file_name);
+						end if;
+					end loop;
 				end if;
+			end loop;
 		else
 			-- No install order file, install in array order
 			for i in 1..npg.npg_files.count() loop
