@@ -16,10 +16,12 @@ as
 		, pg_version_minor		number
 		, pg_version_fix			number
 		, pg_build_date				date
+		, pg_hash							varchar2(128)
 		, pg_description			varchar2(4000)
 		, pg_url_doc					varchar2(1024)
 		, pg_key							varchar2(4000)
 		, pg_order_file				number
+		, pg_install_status		number
 	);
 
 	type pg_require is record (
@@ -32,6 +34,8 @@ as
 		file_name							varchar2(256)
 		, file_type						varchar2(256)
 		, file_content				clob
+		, compile_success			number
+		, compile_error				number
 	);
 	type pg_files is table of pg_file index by pls_integer;
 

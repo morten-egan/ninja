@@ -10,8 +10,9 @@ as
 
 	as
 
-		l_ret_val			boolean := false;
+		l_ret_val				boolean := false;
 		l_object_name		varchar2(128);
+		l_errnum				number;
 
 	begin
 
@@ -35,8 +36,12 @@ as
 
 		exception
 			when others then
+				l_errnum := SQLCODE;
 				dbms_application_info.set_action(null);
-				raise;
+				npg.npg_files(file_id).compile_success := -1;
+				npg.npg_files(file_id).compile_error := l_errnum;
+				npg.package_meta.pg_install_status := -1;
+				return l_ret_val;
 
 	end compile_file_id;
 
@@ -118,7 +123,10 @@ as
 							l_file_name := substr(buf, 1, instr(buf,':') - 1);
 							l_file_type := ltrim(substr(buf, instr(buf,':') + 1));
 							-- Now we have the required info to compile the file.
-							dbms_output.put_line('Compiling: ' || l_file_name);
+							l_ret_val := ninja_compile.compile_file_name (
+								npg						=>		npg
+								, file_name		=>		l_file_name
+							);
 						end if;
 					end loop;
 				end if;
@@ -131,6 +139,12 @@ as
 					, file_id	=>	i
 				);
 			end loop;
+		end if;
+
+		-- Now we are done with all compilations.
+		-- Check if any errors and if there are, we rollback.
+		if npg.package_meta.pg_install_status < 0 then
+			dbms_output.put_line('Installation failed. Rollback started.');
 		end if;
 
 		dbms_application_info.set_action(null);

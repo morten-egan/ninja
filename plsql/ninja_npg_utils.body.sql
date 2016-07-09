@@ -111,6 +111,41 @@ as
 
 	end split_string;
 
+	function npg_source_hash (
+		npg											in out		ninja_parse.ninja_package
+	)
+	return varchar2
+
+	as
+
+	  l_ret_var               varchar2(128);
+		l_combined_source				clob := '';
+
+	begin
+
+	  dbms_application_info.set_action('ninja_source_hash');
+
+		for i in 1..npg.npg_files.count() loop
+			l_combined_source := l_combined_source || npg.npg_files(i).file_content;
+		end loop;
+
+		-- Once we are done collating the source, we can calculate the hash value.
+		l_ret_var := rawtohex(dbms_crypto.hash(
+			src				=>		utl_raw.cast_to_raw(l_combined_source)
+			, typ			=>		dbms_crypto.hash_sh1
+		));
+
+	  dbms_application_info.set_action(null);
+
+	  return l_ret_var;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end npg_source_hash;
+
 begin
 
 	dbms_application_info.set_client_info('ninja_npg_utils');

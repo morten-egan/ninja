@@ -136,6 +136,8 @@ as
 						elsif l_current_block = 'files' then
 							l_files(l_files_idx).file_name := l_line_name;
 							l_files(l_files_idx).file_type := l_line_value;
+							l_files(l_files_idx).compile_success := 0;
+							l_files(l_files_idx).compile_error := 0;
 							if l_line_name = 'install.order' then
 								npg.package_meta.pg_order_file := 1;
 							end if;
@@ -156,6 +158,9 @@ as
 		-- Set the list of requirements and files
 		npg.requirements := l_requirements;
 		npg.npg_files := l_files;
+
+		-- Set fixed attributes
+		npg.package_meta.pg_install_status := 0;
 
 		-- Check that all required fields are present in the spec file
 		l_required_idx := l_required_parsed.first;
@@ -235,6 +240,7 @@ as
 
 		dbms_application_info.set_action('validate_package');
 
+		-- First we check if we have the right privileges as required in the spec file.
 		-- Let us go through all the requirements one-by-one
 		for i in 1..npg.requirements.count() loop
 			if npg.requirements(i).require_type = 'privilege' then
@@ -251,6 +257,11 @@ as
 				end if;*/
 			end if;
 		end loop;
+
+		-- Then we get the SHA1 of the source.
+		npg.package_meta.pg_hash := ninja_npg_utils.npg_source_hash(
+			npg		=>		npg
+		);
 
 		dbms_application_info.set_action(null);
 
