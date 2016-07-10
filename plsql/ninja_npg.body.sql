@@ -13,6 +13,10 @@ as
 		l_ninja_npg				ninja_parse.ninja_package;
 		l_ninja_binary		blob;
 
+		-- Exception
+		install_failed					exception;
+		pragma									exception_init(install_failed, -20001);
+
 	begin
 
 		dbms_application_info.set_action('install_p');
@@ -30,11 +34,19 @@ as
 			ninja_parse.validate_package(l_ninja_npg);
 			-- Requirements are validated. Let us install the package
 			ninja_compile.compile_npg(l_ninja_npg);
-			-- Sources are installed successfully. Register installed package
-			ninja_register.register_install(l_ninja_npg);
+			-- Let us check if the compilation was successfull. If not rollback.
+			if l_ninja_npg.package_meta.pg_install_status < 0 then
+				-- We failed in the install. Let us rollback the installation.
+				ninja_compile.rollback_npg(l_ninja_npg);
+				-- We have rolled back. Raise exception to inform about failure.
+				raise_application_error(-20001, 'Package: ' || package_name || ' failed installation. Install has been rolled back.');
+			else
+				-- Sources are installed successfully. Register installed package
+				ninja_register.register_install(l_ninja_npg);
+			end if;
 		else
 			-- Already installed. Use update instead
-			null;
+			raise_application_error(-20001, 'Package: ' || package_name || ' already installed. Please use update_p instead.');
 		end if;
 
 		dbms_application_info.set_action(null);
@@ -53,8 +65,6 @@ as
 	)
 
 	as
-
-		l_ret_val			npg_line;
 
 	begin
 
@@ -75,8 +85,6 @@ as
 	)
 
 	as
-
-		l_ret_val			npg_line;
 
 	begin
 

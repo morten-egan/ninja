@@ -41,5 +41,13 @@ as
 		npg							in out				ninja_parse.ninja_package
 	);
 
+	/** Rollback a full npg package.
+	* @author Morten Egan
+	* @param npg The NPG package to rollback.
+	*/
+	procedure rollback_npg (
+	  npg             in out       	ninja_parse.ninja_package
+	);
+
 end ninja_compile;
 /

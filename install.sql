@@ -1,12 +1,27 @@
+@@sql/network_acl.sql
+
 @@sql/user.sql
 
 connect ninja/ninja
 
 @@sql/tables
 
--- Pljson
-@@pljson/install.sql
-
--- ZIP util pkg
+-- PLSQL Specs
 @@plsql/zip_util_pkg.spec.sql
+@@plsql/ninja_parse.spec.sql
+@@plsql/ninja_npg_utils.spec.sql
+@@plsql/ninja_download.spec.sql
+@@plsql/ninja_validate.spec.sql
+@@plsql/ninja_compile.spec.sql
+@@plsql/ninja_register.spec.sql
+@@plsql/ninja_npg.spec.sql
+
+-- PLSQL Bodies
 @@plsql/zip_util_pkg.body.sql
+@@plsql/ninja_parse.body.sql
+@@plsql/ninja_npg_utils.body.sql
+@@plsql/ninja_download.body.sql
+@@plsql/ninja_validate.body.sql
+@@plsql/ninja_compile.body.sql
+@@plsql/ninja_register.body.sql
+@@plsql/ninja_npg.body.sql

@@ -141,12 +141,6 @@ as
 			end loop;
 		end if;
 
-		-- Now we are done with all compilations.
-		-- Check if any errors and if there are, we rollback.
-		if npg.package_meta.pg_install_status < 0 then
-			dbms_output.put_line('Installation failed. Rollback started.');
-		end if;
-
 		dbms_application_info.set_action(null);
 
 		exception
@@ -155,6 +149,42 @@ as
 				raise;
 
 	end compile_npg;
+
+	procedure rollback_npg (
+	  npg						in out				ninja_parse.ninja_package
+	)
+
+	as
+
+			l_object_name		varchar2(128);
+			l_d_cmd					varchar2(4000);
+
+	begin
+
+	  dbms_application_info.set_action('rollback_npg');
+
+		for i in 1..npg.npg_files.count() loop
+			if instr(npg.npg_files(i).file_name, '.') > 0 then
+				l_object_name := substr(npg.npg_files(i).file_name, 1, instr(npg.npg_files(i).file_name, '.') - 1);
+			else
+				l_object_name := npg.npg_files(i).file_name;
+			end if;
+			if npg.npg_files(i).file_name != 'order.install' then
+				if npg.npg_files(i).file_type not in ('package body', 'order file') then
+					l_d_cmd := 'drop ' || npg.npg_files(i).file_type || ' ' || l_object_name;
+					execute immediate l_d_cmd;
+				end if;
+			end if;
+		end loop;
+
+	  dbms_application_info.set_action(null);
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end rollback_npg;
 
 begin
 

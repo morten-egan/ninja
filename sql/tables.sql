@@ -11,8 +11,7 @@ create table ninja_repositories (
 	, repository_hash					varchar2(100)					constraint ninja_repos_hash_nn not null
 );
 
-insert into ninja_repositories values ('http://npg.plsql.ninja', sysdate, sysdate, sys_guid());
-
+/*
 create table ninja_repos_contents_cache (
 	repository_source					varchar2(4000)				constraint ninja_repos_source_ref references ninja_repositories(repository_source)
 	, package_name						varchar2(100)					constraint ninja_repos_pkg_name_nn not null
@@ -22,6 +21,7 @@ create table ninja_repos_contents_cache (
 	, package_version					varchar2(20)					constraint ninja_repos_pkg_version_nn not null
 	, package_description			varchar2(4000)
 );
+*/
 
 create table ninja_installed_packages (
 	npg_name									varchar2(100)					constraint ninja_install_pkg_name_nn not null
