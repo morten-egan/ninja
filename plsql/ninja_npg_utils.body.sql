@@ -146,6 +146,32 @@ as
 
 	end npg_source_hash;
 
+	procedure log_entry (
+		package_id            	in        	varchar2
+		, entry									in					varchar2
+	)
+
+	as
+
+		pragma									autonomous_transaction;
+
+	begin
+
+	  dbms_application_info.set_action('log_entry');
+
+		insert into ninja_install_log (ninja_id, entry_time, entry) values (package_id, sysdate, entry);
+
+		commit;
+
+	  dbms_application_info.set_action(null);
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end log_entry;
+
 begin
 
 	dbms_application_info.set_client_info('ninja_npg_utils');

@@ -55,5 +55,14 @@ as
 	)
 	return varchar2;
 
+	/** Log an install entry in the log table.
+	* @author Morten Egan
+	* @param package_id The unique install id for the package installation/update/deletion.
+	*/
+	procedure log_entry (
+	  package_id            	in        	varchar2
+		, entry									in					varchar2
+	);
+
 end ninja_npg_utils;
 /
