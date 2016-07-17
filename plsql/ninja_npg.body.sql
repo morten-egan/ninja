@@ -33,14 +33,17 @@ as
 			-- We are ok to install
 			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Package: ' || package_name || ' ready to be installed.');
 			-- Download binary to start the process
-			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Downloading NPG file');
+			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Downloading NPG file.');
 			l_ninja_binary := ninja_download.get_npg(package_name, package_version, repository);
 			-- Unpack the spec file into the npg type
+			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Unpacking npg zip file.');
 			ninja_parse.unpack_binary_npg(l_ninja_binary, l_ninja_npg);
 			-- Now the spec file is unpackd, and we have the basic npg structure.
 			-- Let us validate requirements
+			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Validating NPG requirements.');
 			ninja_parse.validate_package(l_ninja_npg);
 			-- Requirements are validated. Let us install the package
+			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Compiling sources.');
 			ninja_compile.compile_npg(l_ninja_npg);
 			-- Let us check if the compilation was successfull. If not rollback.
 			if l_ninja_npg.package_meta.pg_install_status < 0 then
@@ -51,6 +54,7 @@ as
 				raise_application_error(-20001, 'Installation failed. Rollback initiated.');
 			else
 				-- Sources are installed successfully. Register installed package
+				ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Sources installed successfully.');
 				ninja_register.register_install(l_ninja_npg);
 			end if;
 		else

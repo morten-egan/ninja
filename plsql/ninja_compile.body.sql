@@ -24,7 +24,11 @@ as
 			l_object_name := npg.npg_files(file_id).file_name;
 		end if;
 
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Before compilation of: ' || l_object_name);
+
 		execute immediate npg.npg_files(file_id).file_content;
+
+		ninja_npg_utils.log_entry(npg.ninja_id, 'After compilation of: ' || l_object_name);
 
 		if ninja_validate.object_is_valid(l_object_name, npg.npg_files(file_id).file_type) then
 			l_ret_val := true;
@@ -58,6 +62,8 @@ as
 	begin
 
 		dbms_application_info.set_action('compile_file_name');
+
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Compiling ' || file_name);
 
 		for i in 1..npg.npg_files.count() loop
 			if npg.npg_files(i).file_name = file_name then
@@ -122,11 +128,18 @@ as
 						if buf is not null then
 							l_file_name := substr(buf, 1, instr(buf,':') - 1);
 							l_file_type := ltrim(substr(buf, instr(buf,':') + 1));
-							-- Now we have the required info to compile the file.
-							l_ret_val := ninja_compile.compile_file_name (
-								npg						=>		npg
-								, file_name		=>		l_file_name
-							);
+							ninja_npg_utils.log_entry(npg.ninja_id, 'From install.order: ' || l_file_name || ' - ' || l_file_type);
+							if l_file_name is null or l_file_type is null then
+								npg.npg_files(i).compile_success := -1;
+								npg.npg_files(i).compile_error := -1;
+								npg.package_meta.pg_install_status := -1;
+							else
+								-- Now we have the required info to compile the file.
+								l_ret_val := ninja_compile.compile_file_name (
+									npg						=>		npg
+									, file_name		=>		l_file_name
+								);
+							end if;
 						end if;
 					end loop;
 				end if;
@@ -156,12 +169,16 @@ as
 
 	as
 
-			l_object_name		varchar2(128);
-			l_d_cmd					varchar2(4000);
+			l_object_name						varchar2(128);
+			l_d_cmd									varchar2(4000);
+			l_object_not_found			exception;
+			pragma									exception_init(l_object_not_found, -4043);
 
 	begin
 
 	  dbms_application_info.set_action('rollback_npg');
+
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Rolling back sources.');
 
 		for i in 1..npg.npg_files.count() loop
 			if instr(npg.npg_files(i).file_name, '.') > 0 then
@@ -169,6 +186,7 @@ as
 			else
 				l_object_name := npg.npg_files(i).file_name;
 			end if;
+			ninja_npg_utils.log_entry(npg.ninja_id, 'Rolling back: ' || l_object_name);
 			if npg.npg_files(i).file_name != 'order.install' then
 				if npg.npg_files(i).file_type not in ('package body', 'order file') then
 					l_d_cmd := 'drop ' || npg.npg_files(i).file_type || ' ' || l_object_name;
@@ -180,6 +198,9 @@ as
 	  dbms_application_info.set_action(null);
 
 	  exception
+			when l_object_not_found then
+				dbms_application_info.set_action(null);
+				null;
 	    when others then
 	      dbms_application_info.set_action(null);
 	      raise;

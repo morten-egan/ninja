@@ -134,11 +134,13 @@ as
 							end if;
 							l_requirements_idx := l_requirements_idx + 1;
 						elsif l_current_block = 'files' then
+							ninja_npg_utils.log_entry(npg.ninja_id, 'Found file ' || l_line_name || ':' || l_line_value);
 							l_files(l_files_idx).file_name := l_line_name;
 							l_files(l_files_idx).file_type := l_line_value;
 							l_files(l_files_idx).compile_success := 0;
 							l_files(l_files_idx).compile_error := 0;
 							if l_line_name = 'install.order' then
+								ninja_npg_utils.log_entry(npg.ninja_id, 'install.order file found.');
 								npg.package_meta.pg_order_file := 1;
 							end if;
 							l_files_idx := l_files_idx + 1;
@@ -166,10 +168,14 @@ as
 		l_required_idx := l_required_parsed.first;
 		while l_required_idx is not null loop
 			if not l_required_parsed(l_required_idx) then
+				ninja_npg_utils.log_entry(npg.ninja_id, 'Missing field in npg.spec: ' || l_required_idx);
+				ninja_npg_utils.log_entry(npg.ninja_id, 'Aborting installation.');
 				raise_application_error(-20001, 'Missing field in npg.spec: ' || l_required_idx);
 			end if;
 			l_required_idx := l_required_parsed.next(l_required_idx);
 		end loop;
+
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Parse done. All required fields present in spec file.');
 
 		dbms_application_info.set_action(null);
 
@@ -201,22 +207,30 @@ as
 		spec_file := ninja_npg_utils.blob_to_clob(zip_util_pkg.get_file(npg_binary, 'npg.spec'));
 		if spec_file is null then
 			dbms_application_info.set_action(null);
+			ninja_npg_utils.log_entry(npg.ninja_id, 'Invalid NPG format: No npg.spec present.');
+			ninja_npg_utils.log_entry(npg.ninja_id, 'Aborting installation.');
 			raise_application_error(-20001, 'Invalid NPG format: No npg.spec present');
 		end if;
 
 		-- Spec file is there, so let us parse it.
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Parsing spec file.');
 		parse_spec_file(spec_file, npg);
 
 		-- Now the spec file is parsed and field validated.
 		-- Let us unpack all the file content
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Unpacking source files.');
 		for i in 1..npg.npg_files.count() loop
 			l_individual_file := zip_util_pkg.get_file(npg_binary, npg.npg_files(i).file_name);
 			if l_individual_file is not null then
+				ninja_npg_utils.log_entry(npg.ninja_id, 'Unpacking '|| npg.npg_files(i).file_name ||'.');
 				npg.npg_files(i).file_content := ninja_npg_utils.blob_to_clob(l_individual_file);
 			else
+				ninja_npg_utils.log_entry(npg.ninja_id, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
 				raise_application_error(-20001, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
 			end if;
 		end loop;
+
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Binary NPG unpacked successfully.');
 
 		dbms_application_info.set_action(null);
 
@@ -262,6 +276,8 @@ as
 		npg.package_meta.pg_hash := ninja_npg_utils.npg_source_hash(
 			npg		=>		npg
 		);
+
+		ninja_npg_utils.log_entry(npg.ninja_id, 'All requirements validated.');
 
 		dbms_application_info.set_action(null);
 
