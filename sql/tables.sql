@@ -4,6 +4,11 @@ create table ninja_pgm_meta (
 	, ninja_pgm_fix				number
 );
 
+create table ninja_settings (
+	setting_name							varchar2(128)					constraint ninja_settings_pk primary key
+	, setting_value						varchar2(1024)				constraint ninja_settings_val_nn not null
+);
+
 create table ninja_repositories (
 	repository_source					varchar2(4000)				constraint ninja_repos_pk primary key
 	, repository_added				date									constraint ninja_repos_added_nn not null

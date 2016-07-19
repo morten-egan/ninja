@@ -64,5 +64,15 @@ as
 		, entry									in					varchar2
 	);
 
+	/** Check a ninja npg setting.
+	* @author Morten Egan
+	* @param setting_name_in The name of the setting to get value from.
+	* @return varchar2 The value of the setting to check.
+	*/
+	function ninja_setting (
+		setting_name_in					in					varchar2
+	)
+	return varchar2;
+
 end ninja_npg_utils;
 /

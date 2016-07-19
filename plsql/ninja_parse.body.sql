@@ -254,16 +254,24 @@ as
 
 		dbms_application_info.set_action('validate_package');
 
-		-- First we check if we have the right privileges as required in the spec file.
+		-- Check if we have the right privileges as required in the spec file.
 		-- Let us go through all the requirements one-by-one
 		for i in 1..npg.requirements.count() loop
+			ninja_npg_utils.log_entry(npg.ninja_id, 'Validating requirement ' || npg.requirements(i).require_type || ' with value ' || npg.requirements(i).require_value);
 			if npg.requirements(i).require_type = 'privilege' then
 				if not ninja_validate.sys_priv_check(npg.requirements(i).require_value) then
+					ninja_npg_utils.log_entry(npg.ninja_id, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
 					raise_application_error(-20001, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
 				end if;
 			elsif npg.requirements(i).require_type = 'ordbms' then
 				if ninja_validate.db_version_check(npg.requirements(i).require_value) then
+					ninja_npg_utils.log_entry(npg.ninja_id, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
 					raise_application_error(-20001, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
+				end if;
+			elsif npg.requirements(i).require_type = 'execute' then
+				if not ninja_validate.can_execute(npg.requirements(i).require_value) then
+					ninja_npg_utils.log_entry(npg.ninja_id, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
+					raise_application_error(-20001, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
 				end if;
 			/*elsif npg.requirements(i).require_type = 'feature' then
 				if not ninja_validate.option_is_enabled(npg.requirements(i).require_value) then

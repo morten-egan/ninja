@@ -25,3 +25,5 @@ connect ninja/ninja
 @@plsql/ninja_compile.body.sql
 @@plsql/ninja_register.body.sql
 @@plsql/ninja_npg.body.sql
+
+@@sql/initial_meta.sql

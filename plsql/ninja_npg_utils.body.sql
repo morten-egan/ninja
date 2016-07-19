@@ -172,6 +172,45 @@ as
 
 	end log_entry;
 
+	function ninja_setting (
+		setting_name_in					in					varchar2
+	)
+	return varchar2
+
+	as
+
+	  l_ret_var               ninja_settings.setting_value%type;
+		l_check_exist						number := 0;
+
+	begin
+
+	  dbms_application_info.set_action('ninja_setting');
+
+		select count(*)
+		into l_check_exist
+		from ninja_settings
+		where setting_name = setting_name_in;
+
+		if l_check_exist > 0 then
+			select setting_value
+			into l_ret_var
+			from ninja_settings
+			where setting_name = setting_name_in;
+		else
+			l_ret_var := null;
+		end if;
+
+	  dbms_application_info.set_action(null);
+
+	  return l_ret_var;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end ninja_setting;
+
 begin
 
 	dbms_application_info.set_client_info('ninja_npg_utils');

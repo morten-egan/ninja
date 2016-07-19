@@ -59,5 +59,15 @@ as
 	)
 	return boolean;
 
+	/** Function to check if we have execute privileges on a plsql package.
+	* @author Morten Egan
+	* @param package_name The name of the package to check execute privs on.
+	* @return boolean True if we have execute, false if we dont.
+	*/
+	function can_execute (
+		package_name							in				varchar2
+	)
+	return boolean;
+
 end ninja_validate;
 /

@@ -174,6 +174,41 @@ as
 
 	end option_is_enabled;
 
+	function can_execute (
+		package_name							in				varchar2
+	)
+	return boolean
+
+	as
+
+	  l_ret_var               boolean := false;
+		l_priv_count						number := 0;
+
+	begin
+
+	  dbms_application_info.set_action('can_execute');
+
+		select count(*)
+		into l_priv_count
+		from all_tab_privs
+		where type = 'PACKAGE'
+		and upper(table_name) = upper(package_name);
+
+		if l_priv_count > 0 then
+			l_ret_var := true;
+		end if;
+
+	  dbms_application_info.set_action(null);
+
+	  return l_ret_var;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end can_execute;
+
 begin
 
 	dbms_application_info.set_client_info('ninja_validate');
