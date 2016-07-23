@@ -94,7 +94,7 @@ as
 	end update_p;
 
 	procedure delete_p(
-		package_name						in				varchar2
+		package_name							in				varchar2
 		, force_delete						in				varchar2 default 'no'
 	)
 
@@ -103,6 +103,15 @@ as
 	begin
 
 		dbms_application_info.set_action('delete_p');
+
+		-- ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Starting installation of: ' || package_name);
+
+		if ninja_npg_utils.check_install_status(package_name) then
+			-- Package is installed.
+			ninja_delete.delete_package(package_name, force_delete);
+		else
+			null;
+		end if;
 
 		dbms_application_info.set_action(null);
 

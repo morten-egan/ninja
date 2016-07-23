@@ -139,6 +139,15 @@ as
 									npg						=>		npg
 									, file_name		=>		l_file_name
 								);
+								-- If installation is a success then register the object.
+								if l_ret_val then
+									ninja_register.register_installed_obj(
+										obj_name_in					=> l_file_name
+										, obj_type_in				=> l_file_type
+										, npg_name_in				=> npg.package_meta.pg_name
+										, npg_pkg_version		=> npg.package_meta.pg_version_major || '.' || npg.package_meta.pg_version_minor || '.' || npg.package_meta.pg_version_fix
+									);
+								end if;
 							end if;
 						end if;
 					end loop;

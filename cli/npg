@@ -1,0 +1,35 @@
+#
+# NPG command wrapper
+#
+
+install () {
+  sqlplus -s $2 @../sql/install.sql $1
+  sql_return_code=$?
+  if [ $sql_return_code != 0 ]
+  then
+    echo "Installation of $1 failed."
+    exit 0;
+  else
+    echo "$1 installed successfully."
+    exit 0;
+  fi
+}
+
+delete () {
+  sqlplus -s $2 @../sql/delete.sql $1
+  sql_return_code=$?
+  if [ $sql_return_code != 0 ]
+  then
+    echo "Delete of package $1 failed."
+    exit 0;
+  else
+    echo "$1 deleted successfully."
+    exit 0;
+  fi
+}
+
+case $1 in
+  "install") install $2 $3;;
+  "delete") delete $2 $3;;
+  *) echo "Sorry unknown option."
+esac

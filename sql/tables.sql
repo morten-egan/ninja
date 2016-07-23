@@ -34,6 +34,21 @@ create table ninja_repos_contents_cache (
 );
 */
 
+create table ninja_package_temp (
+	temp_id										varchar2(250)					constraint ninja_tmp_id_nn not null
+	, temp_type								varchar2(40)					constraint ninja_tmp_type_chk check (temp_type in ('NPG', 'SOURCE'))
+	, temp_b_content					blob
+	, temp_c_content					clob
+);
+
+create table ninja_npg_objects (
+	npg_name									varchar2(100)
+	, installed_schema				varchar2(100)
+	, pg_version							varchar2(100)
+	, obj_type								varchar2(100)
+	, obj_name								varchar2(100)
+);
+
 create table ninja_installed_packages (
 	npg_name									varchar2(100)					constraint ninja_install_pkg_name_nn not null
 	, installed_schema				varchar2(100)					constraint ninja_install_pkg_schema_nn not null
@@ -42,4 +57,5 @@ create table ninja_installed_packages (
 	, install_date						date									constraint ninja_install_pkg_date_nn not null
 	, pg_author								varchar2(200)					constraint ninja_install_pkg_author_nn not null
 	, upgrade_date						date
+	, install_id							varchar2(50)
 );

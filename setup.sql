@@ -1,6 +1,8 @@
-@@sql/network_acl.sql
+set define off
 
 @@sql/user.sql
+
+@@sql/network_acl.sql
 
 connect ninja/ninja
 
@@ -13,6 +15,7 @@ connect ninja/ninja
 @@plsql/ninja_download.spec.sql
 @@plsql/ninja_validate.spec.sql
 @@plsql/ninja_compile.spec.sql
+@@plsql/ninja_delete.spec.sql
 @@plsql/ninja_register.spec.sql
 @@plsql/ninja_npg.spec.sql
 
@@ -22,6 +25,7 @@ connect ninja/ninja
 @@plsql/ninja_npg_utils.body.sql
 @@plsql/ninja_download.body.sql
 @@plsql/ninja_validate.body.sql
+@@plsql/ninja_delete.body.sql
 @@plsql/ninja_compile.body.sql
 @@plsql/ninja_register.body.sql
 @@plsql/ninja_npg.body.sql
