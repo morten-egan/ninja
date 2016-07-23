@@ -43,13 +43,18 @@ as
 
 		l_ret_val			boolean := false;
 		chk_stmt			varchar2(1000);
+		l_interm_chk	number := 0;
 
 	begin
 
 		dbms_application_info.set_action('db_version_check');
 
-		chk_stmt := 'begin :b1 := dbms_db_version.'|| db_version_met ||'; end;';
-		execute immediate chk_stmt using in out l_ret_val;
+		chk_stmt := 'declare v1 number; begin if dbms_db_version.'|| db_version_met ||' then :b1 := 1; end if; end;';
+		execute immediate chk_stmt using in out l_interm_chk;
+
+		if l_interm_chk > 0 then
+			l_ret_val := true;
+		end if;
 
 		dbms_application_info.set_action(null);
 
