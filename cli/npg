@@ -28,8 +28,26 @@ delete () {
   fi
 }
 
+search () {
+  curl plsql.ninja/npg/bin.s?s=$1
+}
+
+list () {
+  sqlplus -s $2 @../sql/list.sql 1
+  sql_return_code=$?
+  if [ $sql_return_code != 0 ]
+  then
+    echo "List of installed NPGs failed."
+    exit 0;
+  else
+    exit 0;
+  fi
+}
+
 case $1 in
   "install") install $2 $3;;
   "delete") delete $2 $3;;
+  "search") search $2 $3;;
+  "list") list $2 $3;;
   *) echo "Sorry unknown option."
 esac
