@@ -120,11 +120,20 @@ as
 
 		dbms_application_info.set_action('object_is_valid');
 
-		select status
-		into l_obj_status
-		from user_objects
-		where object_name = upper(obj_name)
-		and object_type = upper(obj_type);
+		-- Catch object_type for known objects where we have to select in all_users instead.
+		if upper(obj_type) in ('CONTEXT') then
+			select status
+			into l_obj_status
+			from all_objects
+			where object_name = upper(obj_name)
+			and object_type = upper(obj_type);
+		else
+			select status
+			into l_obj_status
+			from user_objects
+			where object_name = upper(obj_name)
+			and object_type = upper(obj_type);
+		end if;
 
 		if l_obj_status = 'VALID' then
 			l_ret_val := true;

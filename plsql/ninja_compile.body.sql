@@ -13,6 +13,7 @@ as
 		l_ret_val				boolean := false;
 		l_object_name		varchar2(128);
 		l_errnum				number;
+		l_errmsg				varchar2(200);
 
 	begin
 
@@ -41,10 +42,12 @@ as
 		exception
 			when others then
 				l_errnum := SQLCODE;
+				l_errmsg := substr(sqlerrm, 1, 200);
 				dbms_application_info.set_action(null);
 				npg.npg_files(file_id).compile_success := -1;
 				npg.npg_files(file_id).compile_error := l_errnum;
 				npg.package_meta.pg_install_status := -1;
+				ninja_npg_utils.log_entry(npg.ninja_id, 'Installation of ' || l_object_name || ' with error: ' || l_errmsg);
 				return l_ret_val;
 
 	end compile_file_id;
