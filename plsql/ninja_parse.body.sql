@@ -292,9 +292,8 @@ as
 					-- NPG package requirement not met. Check if we can install.
 					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'NPG package requirement for ' || npg.requirements(i).require_value ||' not met.');
-					-- Here we check if we can install. If we can, we do not raise error but automatic install instead.
-					-- If we cannot install the simply raise error.
-					raise_application_error(-20001, 'NPG package requirement for ' || npg.requirements(i).require_value ||' not met.');
+					-- For packages we do not throw an error. We will first check other place if we can install those packages, and if not then
+					-- we throw error.
 				else
 					npg.requirements(i).require_met := 1;
 				end if;

@@ -2,6 +2,34 @@ create or replace package body ninja_npg
 
 as
 
+	procedure recursive_iu (
+	  npg             					in out       	ninja_parse.ninja_package
+		, repository							in						varchar2 default null
+		, cli_generated_id				in						varchar2 default null
+	)
+
+	as
+
+	begin
+
+	  dbms_application_info.set_action('recursive_iu');
+
+		-- Let us check if there are any extra NPG packages that we need to install.
+		for i in 1..npg.requirements.count() loop
+			if npg.requirements(i).require_type = 'package' and npg.requirements(i).require_met = -1 then
+				ninja_npg_utils.log_entry(npg.ninja_id, 'NPG Package '|| npg.requirements(i).require_value ||' required and not installed.', cli_generated_id);
+			end if;
+		end loop;
+
+	  dbms_application_info.set_action(null);
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end recursive_iu;
+
 	procedure install_p (
 		package_name							in				varchar2
 		, package_version					in				varchar2 default null
@@ -43,7 +71,10 @@ as
 			-- Let us validate requirements
 			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Validating NPG requirements.', cli_generated_id);
 			ninja_parse.validate_package(l_ninja_npg);
-			-- Requirements are validated. Let us install the package
+			-- Requirements are validated. Now check if we need to install extra packages.
+			ninja_npg.recursive_iu(l_ninja_npg, repository, cli_generated_id);
+			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'All NPG requirements validated.', cli_generated_id);
+			-- All requirements are validated or fixed. Let us install the package
 			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Compiling sources.', cli_generated_id);
 			ninja_compile.compile_npg(l_ninja_npg);
 			-- Let us check if the compilation was successfull. If not rollback.
