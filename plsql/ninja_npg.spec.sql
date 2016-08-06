@@ -22,8 +22,9 @@ as
 	*/
 	procedure install_p (
 		package_name						in				varchar2
-		, package_version					in				varchar2 default null
+		, package_version				in				varchar2 default null
 		, repository						in				varchar2 default null
+		, cli_generated_id			in				varchar2 default null
 	);
 
 	/** Update package using the nínja package manager.
@@ -44,8 +45,9 @@ as
 	* @param force_delete Yes to force delete even though there are dependencies. Defaults to No.
 	*/
 	procedure delete_p (
-		package_name						in				varchar2
+		package_name							in				varchar2
 		, force_delete						in				varchar2 default 'no'
+		, cli_generated_id				in				varchar2 default null
 	);
 
 end ninja_npg;

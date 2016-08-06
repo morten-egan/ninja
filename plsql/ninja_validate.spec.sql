@@ -69,5 +69,15 @@ as
 	)
 	return boolean;
 
+	/** Validate if NPG package requirement is met. Is package installed,
+	* and if it is, is it the right version.
+	* @author Morten Egan
+	* @return boolean True if requirement is met, false if not.
+	*/
+	function npg_require (
+		require_string						in				varchar2
+	)
+	return boolean;
+
 end ninja_validate;
 /

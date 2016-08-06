@@ -11,6 +11,22 @@ as
 
 	-- Types and objects
 	type tab_strings is table of varchar2(1000);
+	type cli_rec is record (
+		cli_mesg_date						date
+		, cli_generated_id			varchar2(30)
+		, mesg									varchar2(1024)
+	);
+	type cli_tab is table of cli_rec;
+
+	/** Streaming npg action log function for CLI interaction.
+	* @author Morten Egan
+	* @return cli_tab Stream of output rows from the CLI action.
+	*/
+	function cli_log (
+		cli_generated_id				in				varchar2
+	)
+	return cli_tab
+	pipelined;
 
 	/** Check if package already is installed in the schema
 	* @author Morten Egan
@@ -62,6 +78,23 @@ as
 	procedure log_entry (
 	  package_id            	in        	varchar2
 		, entry									in					varchar2
+		, cli_generated_id			in					varchar2 default null
+	);
+
+	/** Start log entry pipe for CLI install.
+	* @author Morten Egan
+	* @param log_name The name of the pipe.
+	*/
+	procedure log_cli_pipe_create (
+	  log_name             		in        varchar2
+	);
+
+	/** Stop log entry pipe for CLI install.
+	* @author Morten Egan
+	* @param log_name The name of the pipe.
+	*/
+	procedure log_cli_pipe_stop (
+	  log_name             		in        varchar2
 	);
 
 	/** Check a ninja npg setting.

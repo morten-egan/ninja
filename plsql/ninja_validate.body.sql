@@ -223,6 +223,51 @@ as
 
 	end can_execute;
 
+	function npg_require (
+		require_string						in				varchar2
+	)
+	return boolean
+
+	as
+
+	  l_ret_var               boolean := false;
+		l_require_npg_name			varchar2(1024);
+		l_require_npg_version		varchar2(1024) := null;
+
+	begin
+
+	  dbms_application_info.set_action('npg_require');
+
+		if instr(require_string,',') > 0 then
+			l_require_npg_name := substr(require_string,1,instr(require_string,',') - 1);
+			l_require_npg_version := substr(require_string, instr(require_string,',') + 1);
+		else
+			l_require_npg_name := require_string;
+		end if;
+
+		if ninja_npg_utils.check_install_status(l_require_npg_name) then
+			-- At least the package is installed.
+			-- Check if we should verify version.
+			if l_require_npg_version is not null then
+				-- We need to check the version.
+				null;
+			else
+				-- We only require the package, no specific version.
+				l_ret_var := true;
+			end if;
+		end if;
+
+	  dbms_application_info.set_action(null);
+
+	  return l_ret_var;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end npg_require;
+
 begin
 
 	dbms_application_info.set_client_info('ninja_validate');

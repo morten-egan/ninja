@@ -129,6 +129,7 @@ as
 						elsif l_current_block = 'require' then
 							l_requirements(l_requirements_idx).require_type := l_line_name;
 							l_requirements(l_requirements_idx).require_value := l_line_value;
+							l_requirements(l_requirements_idx).require_met := 0;
 							if l_line_name = 'ordbms' then
 								l_required_parsed('ordbms') := true;
 							end if;
@@ -260,23 +261,43 @@ as
 			ninja_npg_utils.log_entry(npg.ninja_id, 'Validating requirement ' || npg.requirements(i).require_type || ' with value ' || npg.requirements(i).require_value);
 			if npg.requirements(i).require_type = 'privilege' then
 				if not ninja_validate.sys_priv_check(npg.requirements(i).require_value) then
+					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
 					raise_application_error(-20001, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
+				else
+					npg.requirements(i).require_met := 1;
 				end if;
 			elsif npg.requirements(i).require_type = 'ordbms' then
 				if ninja_validate.db_version_check(npg.requirements(i).require_value) then
+					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
 					raise_application_error(-20001, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
+				else
+					npg.requirements(i).require_met := 1;
 				end if;
 			elsif npg.requirements(i).require_type = 'execute' then
 				if not ninja_validate.can_execute(npg.requirements(i).require_value) then
+					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
 					raise_application_error(-20001, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
+				else
+					npg.requirements(i).require_met := 1;
 				end if;
 			/*elsif npg.requirements(i).require_type = 'feature' then
 				if not ninja_validate.option_is_enabled(npg.requirements(i).require_value) then
 					raise_application_error(-20001, 'Feature: ' || npg.requirements(i).require_value || ' not enabled.');
 				end if;*/
+			elsif npg.requirements(i).require_type = 'package' then
+				if not ninja_validate.npg_require(npg.requirements(i).require_value) then
+					-- NPG package requirement not met. Check if we can install.
+					npg.requirements(i).require_met := -1;
+					ninja_npg_utils.log_entry(npg.ninja_id, 'NPG package requirement for ' || npg.requirements(i).require_value ||' not met.');
+					-- Here we check if we can install. If we can, we do not raise error but automatic install instead.
+					-- If we cannot install the simply raise error.
+					raise_application_error(-20001, 'NPG package requirement for ' || npg.requirements(i).require_value ||' not met.');
+				else
+					npg.requirements(i).require_met := 1;
+				end if;
 			end if;
 		end loop;
 

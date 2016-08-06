@@ -27,6 +27,7 @@ as
 	type pg_require is record (
 		require_type					varchar2(150)
 		, require_value				varchar2(4000)
+		, require_met					number
 	);
 	type pg_requirements is table of pg_require index by pls_integer;
 

@@ -87,6 +87,7 @@ as
     package_name_in             in        varchar2
     , do_force                  in        varchar2 default 'no'
     , pkg_installed_schema      in        varchar2 default sys_context('USERENV', 'CURRENT_SCHEMA')
+    , cli_generated_id				  in				varchar2 default null
   )
 
   as
@@ -97,9 +98,11 @@ as
 
     -- First we drop all objects registered with the package.
     npg_objects_drop(package_name_in, pkg_installed_schema);
+    ninja_npg_utils.log_entry(cli_generated_id, 'Package objects successfully removed.', cli_generated_id);
 
     -- After that we need to remove the registry entry.
     npg_registry_remove(package_name_in, pkg_installed_schema);
+    ninja_npg_utils.log_entry(cli_generated_id, 'Registry information removed.', cli_generated_id);
 
     dbms_application_info.set_action(null);
 
