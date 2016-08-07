@@ -10,6 +10,11 @@ as
 
 	as
 
+		l_pkg_exists							varchar2(20);
+
+		install_failed						exception;
+		pragma										exception_init(install_failed, -20001);
+
 	begin
 
 	  dbms_application_info.set_action('recursive_iu');
@@ -18,6 +23,27 @@ as
 		for i in 1..npg.requirements.count() loop
 			if npg.requirements(i).require_type = 'package' and npg.requirements(i).require_met = -1 then
 				ninja_npg_utils.log_entry(npg.ninja_id, 'NPG Package '|| npg.requirements(i).require_value ||' required and not installed.', cli_generated_id);
+				-- Let us check
+				l_pkg_exists := utl_http.request('plsql.ninja/npg/bin.cnpg?pv=' || npg.requirements(i).require_value);
+				if trim(replace(l_pkg_exists,chr(10))) = '1' then
+					ninja_npg_utils.log_entry(npg.ninja_id, npg.requirements(i).require_value ||' exists and is being installed.', cli_generated_id);
+					-- NPG is there, we install before we continue on actual package.
+					if instr(npg.requirements(i).require_value, '@') > 0 then
+						install_p(
+							package_name						=>				substr(npg.requirements(i).require_value, 1, instr(npg.requirements(i).require_value, '@') - 1)
+							, package_version				=>				substr(npg.requirements(i).require_value, instr(npg.requirements(i).require_value, '@') + 1)
+							, cli_generated_id			=>				cli_generated_id
+						);
+					else
+						install_p(
+							package_name						=>			npg.requirements(i).require_value
+							, cli_generated_id			=>				cli_generated_id
+						);
+					end if;
+				else
+					-- Raise error.
+					ninja_npg_utils.log_entry(npg.ninja_id, npg.requirements(i).require_value ||' does not exists.', cli_generated_id);
+				end if;
 			end if;
 		end loop;
 

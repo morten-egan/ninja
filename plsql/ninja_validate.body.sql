@@ -238,9 +238,9 @@ as
 
 	  dbms_application_info.set_action('npg_require');
 
-		if instr(require_string,',') > 0 then
-			l_require_npg_name := substr(require_string,1,instr(require_string,',') - 1);
-			l_require_npg_version := substr(require_string, instr(require_string,',') + 1);
+		if instr(require_string,'@') > 0 then
+			l_require_npg_name := substr(require_string,1,instr(require_string,'@') - 1);
+			l_require_npg_version := substr(require_string, instr(require_string,'@') + 1);
 		else
 			l_require_npg_name := require_string;
 		end if;

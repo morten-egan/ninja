@@ -16,8 +16,8 @@ privilege: create any synonym
 feature: partitioning
 privilege: create index
 ordbms: 11.2.0.4
-package: ThatOtherPackage,1.0.2
-package: YetAnotherPackage,1.2
+package: ThatOtherPackage@1.0.2
+package: YetAnotherPackage@1.2.0
 privilege: create procedure
 [files]
 asdf.pks: df77692a4b1eca60ae3e05c122056cc3
