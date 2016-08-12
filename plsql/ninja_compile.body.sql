@@ -10,8 +10,8 @@ as
 
 	as
 
-		l_compile_id					varchar2(1024) := sys_guid();
-		l_job_name						varchar2(60) := compile_user || '.' || substr(l_compile_id, 1, 26);
+		l_compile_id					varchar2(1024) := 'NPG' || substr(sys_guid(), 1, 24);
+		l_job_name						varchar2(60) := compile_user || '.' || l_compile_id;
 
 		l_message							varchar2(4000);
 		l_result							integer;
@@ -36,30 +36,34 @@ as
 
 		dbms_alert.register(
 			name				=>		l_compile_id
+			, cleanup		=>		false
 		);
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Registered for signal on: ' || l_job_name || ' job.');
 
 		dbms_scheduler.create_job(
 			job_name						=>		l_job_name
 			, job_type					=>		'PLSQL_BLOCK'
-			, job_action				=>		'declare c_src clob; c_id varcar2(1024) := '''|| l_compile_id || ''';
-																begin
-																	c_src := ninja_npg.gs(c_id);
-																	execute immediate c_src;
-																	ninja_npg.sc(c_id, ''1'');
-																	exception
-																		when others then
-																			ninja_npg.sc(c_id, ''-1'');
-																end;'
+			, job_action				=>		'declare c_src clob; c_id varchar2(1024) := '''|| l_compile_id || ''';
+			                          begin
+			                            c_src := ninja_npg.gs(c_id);
+			                            execute immediate c_src;
+			                            ninja_npg.sc(c_id, ''1'');
+			                            exception
+			                              when others then
+			                                ninja_npg.sc(c_id, ''-1'');
+			                          end;'
 			, enabled						=>		true
 		);
 
-		-- We will wait for 2 minutes for compilation to succeed.
+		-- We will wait for 20 seconds for compilation to succeed.
 		dbms_alert.waitone(
 			name					=>		l_compile_id
 			, message			=>		l_message
 			, status			=>		l_result
-			, timeout			=>		120
+			, timeout			=>		20
 		);
+
+		ninja_npg_utils.log_entry(npg.ninja_id, 'Waited with result: ' || l_result || ' on signal with content: ' || l_message);
 
 		if l_result = 1 then
 			-- Timeout happened. Consider failed and set to rollback;
@@ -70,7 +74,7 @@ as
 			-- We got the message back. Check the status.
 			if l_message = '1' then
 				-- Success.
-				null;
+				npg.npg_files(file_id).compile_success := 1;
 			else
 				npg.npg_files(file_id).compile_success := -1;
 				npg.npg_files(file_id).compile_error := -1;
@@ -128,11 +132,15 @@ as
 
 		ninja_npg_utils.log_entry(npg.ninja_id, 'Before compilation of: ' || l_object_name);
 
-		execute immediate npg.npg_files(file_id).file_content;
+		-- execute immediate npg.npg_files(file_id).file_content;
+		initiate_compilation(npg, file_id, l_npg_install);
 
 		ninja_npg_utils.log_entry(npg.ninja_id, 'After compilation of: ' || l_object_name);
 
-		if ninja_validate.object_is_valid(l_object_name, npg.npg_files(file_id).file_type) then
+		--if ninja_validate.object_is_valid(l_object_name, npg.npg_files(file_id).file_type) then
+		--	l_ret_val := true;
+		--end if;
+		if npg.npg_files(file_id).compile_success = 1 then
 			l_ret_val := true;
 		end if;
 

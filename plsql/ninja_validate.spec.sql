@@ -1,4 +1,5 @@
 create or replace package ninja_validate
+authid current_user
 
 as
 
