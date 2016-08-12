@@ -14,6 +14,42 @@ as
 	version_minor		number := 0;
 	version_fix			number := 1;
 
+	type cli_rec is record (
+		cli_mesg_date						date
+		, cli_generated_id			varchar2(1024)
+		, mesg									varchar2(1024)
+	);
+	type cli_tab is table of cli_rec;
+
+	/** Streaming npg action log function for CLI interaction.
+	* @author Morten Egan
+	* @return cli_tab Stream of output rows from the CLI action.
+	*/
+	function cli_log (
+		cli_generated_id				in				varchar2
+	)
+	return cli_tab
+	pipelined;
+
+	/** Get source for NPG package installation.
+	* @author Morten Egan
+	* @param sid The source id to get.
+	* @return clob The source to install.
+	*/
+	function gs (
+		sid											in				varchar2
+	)
+	return clob;
+
+	/** Signal about source compilation back to installation session.
+	* @author Morten Egan
+	* @param sid The source id to signal about
+	*/
+	procedure sc (
+	  sid             				in        varchar2
+		, sm										in				varchar2
+	);
+
 	/** Install package using the ninja package manager.
 	* @author Morten Egan
 	* @param package_name The name of the package to install.

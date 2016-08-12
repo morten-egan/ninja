@@ -59,3 +59,10 @@ create table ninja_installed_packages (
 	, upgrade_date						date
 	, install_id							varchar2(50)
 );
+
+create table ninja_compile_temp (
+	npg_id										varchar2(1024)
+	, compile_id							varchar2(1024)
+	, compile_source					clob
+	, compiled								number								default 0
+);

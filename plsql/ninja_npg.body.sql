@@ -56,6 +56,109 @@ as
 
 	end recursive_iu;
 
+	function gs (
+		sid											in				varchar2
+	)
+	return clob
+
+	as
+
+	  l_ret_var               clob;
+
+	begin
+
+	  dbms_application_info.set_action('gs');
+
+		select
+			compile_source
+		into
+			l_ret_var
+		from
+			ninja_compile_temp
+		where
+			compile_id = sid;
+
+	  dbms_application_info.set_action(null);
+
+	  return l_ret_var;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end gs;
+
+	procedure sc (
+	  sid             				in        varchar2
+		, sm										in				varchar2
+	)
+
+	as
+
+	begin
+
+	  dbms_application_info.set_action('sc');
+
+		dbms_alert.signal(
+			name				=>			sid
+			, message		=>			sm
+		);
+
+		commit;
+
+	  dbms_application_info.set_action(null);
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end sc;
+
+	function cli_log (
+		cli_generated_id				in				varchar2
+	)
+	return cli_tab
+	pipelined
+
+	as
+
+	  l_ret_var               cli_rec;
+
+		cursor get_log_entries is
+			select
+				nil.entry
+				, nil.entry_time
+			from
+				ninja_install_log nil
+			where
+				nil.ninja_id = cli_generated_id
+			order by
+				nil.entry_time asc;
+
+	begin
+
+	  dbms_application_info.set_action('cli_log');
+
+		for ent in get_log_entries loop
+			l_ret_var.cli_mesg_date := ent.entry_time;
+			l_ret_var.cli_generated_id := cli_generated_id;
+			l_ret_var.mesg := ent.entry;
+			pipe row(l_ret_var);
+		end loop;
+
+	  dbms_application_info.set_action(null);
+
+	  return;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end cli_log;
+
 	procedure install_p (
 		package_name							in				varchar2
 		, package_version					in				varchar2 default null
@@ -81,6 +184,7 @@ as
 		l_ninja_npg.ninja_id := l_ninja_id;
 
 		ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Starting installation of: ' || package_name, cli_generated_id);
+		ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Session user is: ' || sys_context('USERENV', 'SESSION_USER'), cli_generated_id);
 
 		-- First we check if the package is already installed, and if it is,
 		-- inform that we should be using update instead.

@@ -9,4 +9,5 @@ grant create procedure to ninja;
 grant execute on utl_http to ninja;
 grant create type to ninja;
 grant execute on dbms_crypto to ninja;
-grant execute on dbms_pipe to ninja;
+grant execute on dbms_alert to ninja;
+grant create public synonym to ninja;

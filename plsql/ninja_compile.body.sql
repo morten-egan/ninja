@@ -2,6 +2,103 @@ create or replace package body ninja_compile
 
 as
 
+	procedure initiate_compilation (
+	  npg             	in out       	ninja_parse.ninja_package
+		, file_id					in						number
+		, compile_user		in						varchar2
+	)
+
+	as
+
+		l_compile_id					varchar2(1024) := sys_guid();
+		l_job_name						varchar2(60) := compile_user || '.' || substr(l_compile_id, 1, 26);
+
+		l_message							varchar2(4000);
+		l_result							integer;
+
+	begin
+
+	  dbms_application_info.set_action('initiate_compilation');
+
+		insert into ninja_compile_temp (
+			npg_id
+			, compile_id
+			, compile_source
+			, compiled
+		) values (
+			npg.ninja_id
+			, l_compile_id
+			, npg.npg_files(file_id).file_content
+			, 0
+		);
+
+		commit;
+
+		dbms_alert.register(
+			name				=>		l_compile_id
+		);
+
+		dbms_scheduler.create_job(
+			job_name						=>		l_job_name
+			, job_type					=>		'PLSQL_BLOCK'
+			, job_action				=>		'declare c_src clob; c_id varcar2(1024) := '''|| l_compile_id || ''';
+																begin
+																	c_src := ninja_npg.gs(c_id);
+																	execute immediate c_src;
+																	ninja_npg.sc(c_id, ''1'');
+																	exception
+																		when others then
+																			ninja_npg.sc(c_id, ''-1'');
+																end;'
+			, enabled						=>		true
+		);
+
+		-- We will wait for 2 minutes for compilation to succeed.
+		dbms_alert.waitone(
+			name					=>		l_compile_id
+			, message			=>		l_message
+			, status			=>		l_result
+			, timeout			=>		120
+		);
+
+		if l_result = 1 then
+			-- Timeout happened. Consider failed and set to rollback;
+			npg.npg_files(file_id).compile_success := -1;
+			npg.npg_files(file_id).compile_error := -1;
+			npg.package_meta.pg_install_status := -1;
+		elsif l_result = 0 then
+			-- We got the message back. Check the status.
+			if l_message = '1' then
+				-- Success.
+				null;
+			else
+				npg.npg_files(file_id).compile_success := -1;
+				npg.npg_files(file_id).compile_error := -1;
+				npg.package_meta.pg_install_status := -1;
+			end if;
+		end if;
+
+		-- Cleanup
+		dbms_alert.remove(
+			name				=>			l_compile_id
+		);
+		delete from ninja_compile_temp where compile_id = l_compile_id;
+		commit;
+
+	  dbms_application_info.set_action(null);
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+				npg.npg_files(file_id).compile_success := -1;
+				npg.npg_files(file_id).compile_error := -1;
+				npg.package_meta.pg_install_status := -1;
+				dbms_alert.remove(
+					name				=>			l_compile_id
+				);
+
+	end initiate_compilation;
+
 	function compile_file_id (
 		npg							in out				ninja_parse.ninja_package
 		, file_id				in						number
@@ -14,6 +111,10 @@ as
 		l_object_name		varchar2(128);
 		l_errnum				number;
 		l_errmsg				varchar2(200);
+
+		-- Session settings
+		l_npg_user							varchar2(1024) := sys_context('USERENV', 'CURRENT_SCHEMA');
+		l_npg_install						varchar2(1024) := sys_context('USERENV', 'SESSION_USER');
 
 	begin
 
@@ -89,7 +190,8 @@ as
 	end compile_file_name;
 
 	procedure compile_npg (
-		npg						in out				ninja_parse.ninja_package
+		npg										in out				ninja_parse.ninja_package
+		, cli_generated_id		in						varchar2 default null
 	)
 
 	as
@@ -138,6 +240,7 @@ as
 								npg.package_meta.pg_install_status := -1;
 							else
 								-- Now we have the required info to compile the file.
+								ninja_npg_utils.log_entry(npg.ninja_id, 'Compiling source: ' || l_file_name, cli_generated_id);
 								l_ret_val := ninja_compile.compile_file_name (
 									npg						=>		npg
 									, file_name		=>		l_file_name

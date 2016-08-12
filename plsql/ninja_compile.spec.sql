@@ -38,7 +38,8 @@ as
 	* @param npg The npg record
 	*/
 	procedure compile_npg (
-		npg							in out				ninja_parse.ninja_package
+		npg										in out				ninja_parse.ninja_package
+		, cli_generated_id		in						varchar2 default null
 	);
 
 	/** Rollback a full npg package.

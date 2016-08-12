@@ -16,6 +16,6 @@ set echo off
 set feedback off
 set verify off
 
-select entry from ninja_install_log where ninja_id = '&2' order by entry_time asc;
+select mesg from table(ninja_npg.cli_log('&2'));
 
 exit;

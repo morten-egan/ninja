@@ -2,18 +2,18 @@ CREATE OR REPLACE package zip_util_pkg
 is
 
   /*
- 
+
   Purpose:      Package handles zipping and unzipping of files
- 
+
   Remarks:      by Anton Scheffer, see http://forums.oracle.com/forums/thread.jspa?messageID=9289744#9289744
-  
+
                 for unzipping, see http://technology.amis.nl/blog/8090/parsing-a-microsoft-word-docx-and-unzip-zipfiles-with-plsql
                 for zipping, see http://forums.oracle.com/forums/thread.jspa?threadID=1115748&tstart=0
- 
+
   Who     Date        Description
   ------  ----------  --------------------------------
   MBR     09.01.2011  Created
- 
+
   */
 
   type t_file_list is table of clob;
