@@ -83,7 +83,10 @@ if args.action == 'list':
     rcommand = npgCLIlist + " " + args.list_filter
     if args.conn_string.find('/') < 0:
         tpass = getpass.getpass('Please enter password for the ' + args.conn_string + ' user: ')
-    queryResult, errorMessage = runSQLAction(rcommand, args.conn_string)
+        allconn = args.conn_string + "/" + tpass
+        queryResult, errorMessage = runSQLAction(rcommand, allconn)
+    else:
+        queryResult, errorMessage = runSQLAction(rcommand, args.conn_string)
     if queryResult.find('ORA-01017') > 0:
         print "Invalid username or password specified."
     else:

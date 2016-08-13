@@ -2,7 +2,7 @@ begin
 	dbms_network_acl_admin.create_acl (
 		acl => 'ninja_acl.xml',
 		description => 'ACL definition for plsql.ninja access',
-		principal => 'NINJA',
+		principal => upper('&1'),
 		is_grant => true,
 		privilege => 'connect',
 		start_date => systimestamp,
@@ -13,7 +13,7 @@ begin
 
 	dbms_network_acl_admin.add_privilege (
 		acl => 'ninja_acl.xml',
-		principal => 'NINJA',
+		principal => upper('&1'),
 		is_grant => true,
 		privilege => 'resolve'
 	);

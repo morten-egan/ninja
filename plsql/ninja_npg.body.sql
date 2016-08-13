@@ -159,6 +159,67 @@ as
 
 	end cli_log;
 
+	function list_p (
+		list_type								in				varchar2 default 'short'
+	)
+	return list_tab
+	pipelined
+
+	as
+
+	  l_ret_var               list_rec;
+		l_listfrom							varchar2(128) := sys_context('USERENV', 'SESSION_USER');
+
+		cursor get_installed is
+			select
+				npg_name
+				, installed_schema
+				, installed_hash
+				, pg_version
+				, install_date
+				, pg_author
+				, upgrade_date
+				, install_id
+			from
+				ninja_installed_packages
+			where
+				installed_schema = l_listfrom
+			order by
+				npg_name asc;
+
+	begin
+
+	  dbms_application_info.set_action('list_p');
+
+		for lst in get_installed loop
+			if list_type = 'short' then
+				l_ret_var.npg_name := lst.npg_name;
+				l_ret_var.npg_output := ' (' || lst.pg_version || ' - ' || lst.installed_schema || ')';
+				pipe row(l_ret_var);
+			elsif list_type = 'all' then
+				l_ret_var.npg_name := lst.npg_name;
+				l_ret_var.npg_output := ' ';
+				pipe row(l_ret_var);
+				l_ret_var.npg_name := ' ';
+				l_ret_var.npg_output := ' Installed on ' || to_char(lst.install_date, 'DD-Mon-YYYY');
+				pipe row(l_ret_var);
+				l_ret_var.npg_name := ' ';
+				l_ret_var.npg_output := ' Version installed ' || lst.pg_version || ' (' || lst.installed_hash || ')';
+				pipe row(l_ret_var);
+			end if;
+		end loop;
+
+	  dbms_application_info.set_action(null);
+
+	  return;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end list_p;
+
 	procedure install_p (
 		package_name							in				varchar2
 		, package_version					in				varchar2 default null

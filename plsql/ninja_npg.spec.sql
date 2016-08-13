@@ -14,12 +14,20 @@ as
 	version_minor		number := 0;
 	version_fix			number := 1;
 
+	-- Type for CLI installation output.
 	type cli_rec is record (
 		cli_mesg_date						timestamp
 		, cli_generated_id			varchar2(1024)
 		, mesg									varchar2(1024)
 	);
 	type cli_tab is table of cli_rec;
+
+	-- Type for List command output.
+	type list_rec is record (
+		npg_name								varchar2(128)
+		, npg_output						varchar2(1024)
+	);
+	type list_tab is table of list_rec;
 
 	/** Streaming npg action log function for CLI interaction.
 	* @author Morten Egan
@@ -29,6 +37,17 @@ as
 		cli_generated_id				in				varchar2
 	)
 	return cli_tab
+	pipelined;
+
+	/** List installed packages.
+	* @author Morten Egan
+	* @param list_type The amount of information to list in the output.
+	* @return list_tab List of installed packages.
+	*/
+	function list_p (
+		list_type								in				varchar2 default 'short'
+	)
+	return list_tab
 	pipelined;
 
 	/** Get source for NPG package installation.
@@ -71,7 +90,7 @@ as
 	*/
 	procedure update_p (
 		package_name						in				varchar2
-		, package_version					in				varchar2 default null
+		, package_version				in				varchar2 default null
 		, repository						in				varchar2 default null
 	);
 
