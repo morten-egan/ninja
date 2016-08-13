@@ -1,53 +1,94 @@
-#
-# NPG command wrapper
-#
+#!/usr/bin/env python
+import argparse
+import os
+import getpass
+from subprocess import Popen, PIPE
+import urllib
 
-install () {
-  sqlplus -s $2 @../sql/install.sql $1
-  sql_return_code=$?
-  if [ $sql_return_code != 0 ]
-  then
-    echo "Installation of $1 failed."
-    exit 0;
-  else
-    echo "$1 installed successfully."
-    exit 0;
-  fi
-}
+parser = argparse.ArgumentParser()
+# Add optional global parameters
+parser.add_argument('--repository', default='plsql.ninja', help='Specify the repository to use for any command')
+# Add subparsers to parse each command individually
+subparsers = parser.add_subparsers(dest='action')
 
-delete () {
-  sqlplus -s $2 @../sql/delete.sql $1
-  sql_return_code=$?
-  if [ $sql_return_code != 0 ]
-  then
-    echo "Delete of package $1 failed."
-    exit 0;
-  else
-    echo "$1 deleted successfully."
-    exit 0;
-  fi
-}
+# Subparser for install
+parser_install = subparsers.add_parser('install')
+parser_install.add_argument('NPG_Name', help='The package name to install.')
+parser_install.add_argument('conn_string', help='The connection string to the schema where package should be installed.')
 
-search () {
-  curl plsql.ninja/npg/bin.s?s=$1
-}
+# Subparser for delete
+parser_delete = subparsers.add_parser('delete')
+parser_delete.add_argument('NPG_Name', help='The package name to delete.')
+parser_delete.add_argument('conn_string', help='The connection string to the schema where package should be deleted from.')
 
-list () {
-  sqlplus -s $2 @../sql/list.sql 1
-  sql_return_code=$?
-  if [ $sql_return_code != 0 ]
-  then
-    echo "List of installed NPGs failed."
-    exit 0;
-  else
-    exit 0;
-  fi
-}
+# Subparser for list
+parser_list = subparsers.add_parser('list')
+parser_list.add_argument('list_filter', help='The filter to apply to the list command')
+parser_list.add_argument('conn_string', help='The connection string to use, when fetching the list of installed NPGs')
 
-case $1 in
-  "install") install $2 $3;;
-  "delete") delete $2 $3;;
-  "search") search $2 $3;;
-  "list") list $2 $3;;
-  *) echo "Sorry unknown option."
-esac
+# Subparser for search
+parser_search = subparsers.add_parser('search')
+parser_search.add_argument('query', help='The query string to use for the search')
+
+args = parser.parse_args()
+
+npgCLIcwd = os.getcwd()
+
+npgCLIinstall = "@" + npgCLIcwd + "/../sql/install.sql"
+npgCLIdelete = "@" + npgCLIcwd + "/../sql/delete.sql"
+npgCLIlist = "@" + npgCLIcwd + "/../sql/list.sql"
+npgGenerateCLI = "@" + npgCLIcwd + "/../sql/generate.sql"
+npgGenerated = ""
+
+def setupCLISession(connectString):
+    queryResult, errorMessage = runSQLAction(npgGenerateCLI, args.conn_string)
+    if queryResult.find('ORA-01017') > 0:
+        print "Invalid username or password specified."
+    else:
+        return queryResult.rstrip().lstrip()
+
+def runSQLAction(actionCmd, connectString):
+    session = Popen(['sqlplus', '-S', connectString], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    session.stdin.write(actionCmd)
+    return session.communicate()
+
+def runSearchAction(searchString):
+    searcher = "http://" + args.repository + "/npg/bin.s?s=" + searchString
+    return urllib.urlopen(searcher).read()
+
+if args.action == 'install':
+    npgGenerated = setupCLISession(args.conn_string)
+    print "NPG Install"
+    rcommand = npgCLIinstall + " " + args.NPG_Name + " " + npgGenerated
+    if args.conn_string.find('/') < 0:
+        tpass = getpass.getpass('Please enter password for the ' + args.conn_string + ' user: ')
+    queryResult, errorMessage = runSQLAction(rcommand, args.conn_string)
+    if queryResult.find('ORA-01017') > 0:
+        print "Invalid username or password specified."
+    else:
+        print queryResult
+if args.action == 'delete':
+    npgGenerated = setupCLISession(args.conn_string)
+    print "NPG Delete"
+    rcommand = npgCLIdelete + " " + args.NPG_Name + " " + npgGenerated
+    if args.conn_string.find('/') < 0:
+        tpass = getpass.getpass('Please enter password for the ' + args.conn_string + ' user: ')
+    queryResult, errorMessage = runSQLAction(rcommand, args.conn_string)
+    if queryResult.find('ORA-01017') > 0:
+        print "Invalid username or password specified."
+    else:
+        print queryResult
+if args.action == 'list':
+    print "NPG List"
+    rcommand = npgCLIlist + " " + args.list_filter
+    if args.conn_string.find('/') < 0:
+        tpass = getpass.getpass('Please enter password for the ' + args.conn_string + ' user: ')
+    queryResult, errorMessage = runSQLAction(rcommand, args.conn_string)
+    if queryResult.find('ORA-01017') > 0:
+        print "Invalid username or password specified."
+    else:
+        print queryResult
+if args.action == 'search':
+    print "NPG Search"
+    searchResult = runSearchAction(args.query)
+    print searchResult
