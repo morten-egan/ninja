@@ -25,6 +25,11 @@ as
     l_object_not_found			exception;
     pragma									exception_init(l_object_not_found, -4043);
 
+    l_compile_id					  varchar2(1024);
+		l_message							  varchar2(4000);
+		l_result							  integer;
+    l_npg_install						varchar2(1024) := sys_context('USERENV', 'SESSION_USER');
+
   begin
 
     dbms_application_info.set_action('npg_objects_drop');
@@ -37,7 +42,14 @@ as
           l_obj_name_cleaned := objs.obj_name;
         end if;
         l_obj_sql_drop := 'drop ' || objs.obj_type || ' ' || l_obj_name_cleaned;
-        execute immediate l_obj_sql_drop;
+        -- Create temp holder for drop command.
+        l_compile_id := ninja_npg_utils.create_execute_object('delete_op', l_obj_sql_drop);
+
+        -- Execute the temporary object.
+        ninja_npg_utils.run_execute_object(l_compile_id, 'delete_op', npg_schema, l_result, l_message);
+
+        -- Cleanup
+        ninja_npg_utils.clear_completed_execute_object(l_compile_id);
       end if;
       -- Remove the object from object_registry.
       delete from ninja_npg_objects
@@ -86,7 +98,7 @@ as
   procedure delete_package (
     package_name_in             in        varchar2
     , do_force                  in        varchar2 default 'no'
-    , pkg_installed_schema      in        varchar2 default sys_context('USERENV', 'CURRENT_SCHEMA')
+    , pkg_installed_schema      in        varchar2 default sys_context('USERENV', 'SESSION_USER')
     , cli_generated_id				  in				varchar2 default null
   )
 

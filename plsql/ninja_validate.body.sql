@@ -113,12 +113,18 @@ as
 
 	as
 
-		l_ret_val			boolean := false;
+		l_ret_val				boolean := false;
 		l_obj_status		varchar2(50);
+		l_tst						varchar2(30);
 
 	begin
 
 		dbms_application_info.set_action('object_is_valid');
+
+		select username
+		into l_tst
+		from user_users;
+		dbms_output.put_line('Running as ' || l_tst);
 
 		-- Catch object_type for known objects where we have to select in all_users instead.
 		if upper(obj_type) in ('CONTEXT') then

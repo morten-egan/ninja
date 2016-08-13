@@ -24,7 +24,7 @@ as
 			, install_id
 		) values (
 			npg.package_meta.pg_name
-			, sys_context('USERENV', 'CURRENT_SCHEMA')
+			, sys_context('USERENV', 'SESSION_USER')
 			, npg.package_meta.pg_hash
 			, npg.package_meta.pg_version_major || '.' || npg.package_meta.pg_version_minor || '.' || npg.package_meta.pg_version_fix
 			, sysdate
@@ -48,7 +48,7 @@ as
 		, obj_type_in						in				varchar2
 		, npg_name_in						in				varchar2
 		, npg_pkg_version				in				varchar2
-		, npg_installed_schema	in				varchar2 default sys_context('USERENV', 'CURRENT_SCHEMA')
+		, npg_installed_schema	in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 
 	as

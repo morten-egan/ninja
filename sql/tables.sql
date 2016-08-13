@@ -18,7 +18,7 @@ create table ninja_repositories (
 
 create table ninja_install_log (
 	ninja_id									varchar2(1024)
-	, entry_time							date
+	, entry_time							timestamp
 	, entry										varchar2(128)
 );
 

@@ -19,7 +19,7 @@ as
 	*/
 	function check_install_status (
 		package_name						in				varchar2
-		, schema_name						in				varchar2 default sys_context('USERENV', 'CURRENT_USER')
+		, schema_name						in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 	return boolean;
 
@@ -74,6 +74,49 @@ as
 		setting_name_in					in					varchar2
 	)
 	return varchar2;
+
+	/** Function to create a temporary execution object.
+	* @author Morten Egan
+	* @param n_id The ninja id of the NPG.
+	* @param c_cont The executable content for the object.
+	* @return varchar2 Returns the new ID of the compile object.
+	*/
+	function create_execute_object (
+		n_id										in					varchar2
+		, c_cont								in					varchar2
+	)
+	return varchar2;
+
+	/** Remove a temporary execution object.
+	* @author Morten Egan
+	* @param c_id The id of the object to remove.
+	*/
+	procedure remove_execute_object (
+	  c_id             				in        	varchar2
+	);
+
+	/** Run a temporary execute object, with status and message output.
+	* @author Morten Egan
+	* @param c_id The ID of the execute object to run.
+	* @param n_id The ninja id of the NPG.
+	* @param eo_result The result of the execution. 1 if timeout, 0 if success.
+	* @param eo_message The message from the execution object.
+	*/
+	procedure run_execute_object (
+	  c_id             				in        	varchar2
+		, n_id									in					varchar2
+		, u_id									in					varchar2
+		, eo_result							out					number
+		, eo_message						out					varchar2
+	);
+
+	/** Clear all information from an already run execute object.
+	* @author Morten Egan
+	* @param c_id The execute object id to clear.
+	*/
+	procedure clear_completed_execute_object (
+	  c_id             				in        	varchar2
+	);
 
 end ninja_npg_utils;
 /

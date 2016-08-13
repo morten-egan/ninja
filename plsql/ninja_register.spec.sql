@@ -30,7 +30,7 @@ as
 		, obj_type_in						in				varchar2
 		, npg_name_in						in				varchar2
 		, npg_pkg_version				in				varchar2
-		, npg_installed_schema	in				varchar2 default sys_context('USERENV', 'CURRENT_SCHEMA')
+		, npg_installed_schema	in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	);
 
 end ninja_register;

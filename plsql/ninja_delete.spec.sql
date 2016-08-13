@@ -18,7 +18,7 @@ as
   procedure delete_package (
     package_name_in             in        varchar2
     , do_force                  in        varchar2 default 'no'
-    , pkg_installed_schema      in        varchar2 default sys_context('USERENV', 'CURRENT_SCHEMA')
+    , pkg_installed_schema      in        varchar2 default sys_context('USERENV', 'SESSION_USER')
     , cli_generated_id				  in				varchar2 default null
   );
 

@@ -39,7 +39,7 @@ as
 
 	function check_install_status (
 		package_name						in				varchar2
-		, schema_name						in				varchar2 default sys_context('USERENV', 'CURRENT_USER')
+		, schema_name						in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 	return boolean
 
@@ -162,9 +162,9 @@ as
 	  dbms_application_info.set_action('log_entry');
 
 		if cli_generated_id is not null then
-			insert into ninja_install_log (ninja_id, entry_time, entry) values (cli_generated_id, sysdate, entry);
+			insert into ninja_install_log (ninja_id, entry_time, entry) values (cli_generated_id, systimestamp, entry);
 		else
-			insert into ninja_install_log (ninja_id, entry_time, entry) values (package_id, sysdate, entry);
+			insert into ninja_install_log (ninja_id, entry_time, entry) values (package_id, systimestamp, entry);
 		end if;
 
 		commit;
@@ -216,6 +216,154 @@ as
 	      raise;
 
 	end ninja_setting;
+
+	function create_execute_object (
+		n_id										in					varchar2
+		, c_cont								in					varchar2
+	)
+	return varchar2
+
+	as
+
+	  l_ret_var               varchar2(100) := 'NPG' || substr(sys_guid(), 1, 24);
+
+	begin
+
+	  dbms_application_info.set_action('create_execute_object');
+
+		insert into ninja_compile_temp (
+			npg_id
+			, compile_id
+			, compile_source
+			, compiled
+		) values (
+			n_id
+			, l_ret_var
+			, c_cont
+			, 0
+		);
+
+		commit;
+
+	  dbms_application_info.set_action(null);
+
+	  return l_ret_var;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end create_execute_object;
+
+	procedure remove_execute_object (
+	  c_id             in        varchar2
+	)
+
+	as
+
+	begin
+
+	  dbms_application_info.set_action('remove_execute_object');
+
+		delete from ninja_compile_temp where compile_id = c_id;
+		commit;
+
+	  dbms_application_info.set_action(null);
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end remove_execute_object;
+
+	procedure run_execute_object (
+	  c_id             				in        	varchar2
+		, n_id									in					varchar2
+		, u_id									in					varchar2
+		, eo_result							out					number
+		, eo_message						out					varchar2
+	)
+
+	as
+
+		l_job_name							varchar2(60) := u_id || '.' || c_id;
+		l_message								varchar2(4000);
+		l_result								integer;
+
+	begin
+
+	  dbms_application_info.set_action('run_execute_object');
+
+		-- Express our interest in the return message from the execution object.
+		dbms_alert.register(
+			name				=>		c_id
+		);
+		ninja_npg_utils.log_entry(n_id, 'Registered for signal on: ' || c_id);
+
+		-- Create the job in target schema for the execute object.
+		dbms_scheduler.create_job(
+			job_name						=>		l_job_name
+			, job_type					=>		'PLSQL_BLOCK'
+			, job_action				=>		'declare c_src clob; c_id varchar2(1024) := '''|| c_id || ''';
+			                          begin
+			                            c_src := ninja_npg.gs(c_id);
+			                            execute immediate c_src;
+			                            ninja_npg.sc(c_id, ''1'');
+			                            exception
+			                              when others then
+			                                ninja_npg.sc(c_id, ''-1'');
+			                          end;'
+			, enabled						=>		true
+		);
+		ninja_npg_utils.log_entry(n_id, 'Executed target job for ' || c_id);
+
+		-- Now we wait for the result of the job.
+		-- Timeout defaults to 20 seconds.
+		dbms_alert.waitone(
+			name					=>		c_id
+			, message			=>		l_message
+			, status			=>		l_result
+			, timeout			=>		to_number(ninja_npg_utils.ninja_setting('execute_object_timeout'))
+		);
+
+		-- Set the results of the signals.
+		eo_result := l_result;
+		eo_message := l_message;
+
+	  dbms_application_info.set_action(null);
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end run_execute_object;
+
+	procedure clear_completed_execute_object (
+	  c_id             				in        	varchar2
+	)
+
+	as
+
+	begin
+
+	  dbms_application_info.set_action('clear_completed_execute_object');
+
+		dbms_alert.remove(
+			name				=>			c_id
+		);
+		remove_execute_object(c_id);
+
+	  dbms_application_info.set_action(null);
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end clear_completed_execute_object;
 
 begin
 

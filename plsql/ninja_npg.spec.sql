@@ -15,7 +15,7 @@ as
 	version_fix			number := 1;
 
 	type cli_rec is record (
-		cli_mesg_date						date
+		cli_mesg_date						timestamp
 		, cli_generated_id			varchar2(1024)
 		, mesg									varchar2(1024)
 	);

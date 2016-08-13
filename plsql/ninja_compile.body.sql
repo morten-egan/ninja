@@ -10,8 +10,7 @@ as
 
 	as
 
-		l_compile_id					varchar2(1024) := 'NPG' || substr(sys_guid(), 1, 24);
-		l_job_name						varchar2(60) := compile_user || '.' || l_compile_id;
+		l_compile_id					varchar2(1024);
 
 		l_message							varchar2(4000);
 		l_result							integer;
@@ -20,50 +19,13 @@ as
 
 	  dbms_application_info.set_action('initiate_compilation');
 
-		insert into ninja_compile_temp (
-			npg_id
-			, compile_id
-			, compile_source
-			, compiled
-		) values (
-			npg.ninja_id
-			, l_compile_id
-			, npg.npg_files(file_id).file_content
-			, 0
-		);
+		-- Create temporary content holder
+		l_compile_id := ninja_npg_utils.create_execute_object(npg.ninja_id, npg.npg_files(file_id).file_content);
 
-		commit;
+		-- Run the execute object
+		ninja_npg_utils.run_execute_object(l_compile_id, npg.ninja_id, compile_user, l_result, l_message);
 
-		dbms_alert.register(
-			name				=>		l_compile_id
-			, cleanup		=>		false
-		);
-		ninja_npg_utils.log_entry(npg.ninja_id, 'Registered for signal on: ' || l_job_name || ' job.');
-
-		dbms_scheduler.create_job(
-			job_name						=>		l_job_name
-			, job_type					=>		'PLSQL_BLOCK'
-			, job_action				=>		'declare c_src clob; c_id varchar2(1024) := '''|| l_compile_id || ''';
-			                          begin
-			                            c_src := ninja_npg.gs(c_id);
-			                            execute immediate c_src;
-			                            ninja_npg.sc(c_id, ''1'');
-			                            exception
-			                              when others then
-			                                ninja_npg.sc(c_id, ''-1'');
-			                          end;'
-			, enabled						=>		true
-		);
-
-		-- We will wait for 20 seconds for compilation to succeed.
-		dbms_alert.waitone(
-			name					=>		l_compile_id
-			, message			=>		l_message
-			, status			=>		l_result
-			, timeout			=>		20
-		);
-
-		ninja_npg_utils.log_entry(npg.ninja_id, 'Waited with result: ' || l_result || ' on signal with content: ' || l_message);
+		ninja_npg_utils.log_entry(npg.ninja_id, l_compile_id || ' signalled: ' || l_message);
 
 		if l_result = 1 then
 			-- Timeout happened. Consider failed and set to rollback;
@@ -83,11 +45,7 @@ as
 		end if;
 
 		-- Cleanup
-		dbms_alert.remove(
-			name				=>			l_compile_id
-		);
-		delete from ninja_compile_temp where compile_id = l_compile_id;
-		commit;
+		ninja_npg_utils.clear_completed_execute_object(l_compile_id);
 
 	  dbms_application_info.set_action(null);
 
@@ -97,9 +55,7 @@ as
 				npg.npg_files(file_id).compile_success := -1;
 				npg.npg_files(file_id).compile_error := -1;
 				npg.package_meta.pg_install_status := -1;
-				dbms_alert.remove(
-					name				=>			l_compile_id
-				);
+				ninja_npg_utils.clear_completed_execute_object(l_compile_id);
 
 	end initiate_compilation;
 
@@ -296,6 +252,11 @@ as
 			l_d_cmd									varchar2(4000);
 			l_object_not_found			exception;
 			pragma									exception_init(l_object_not_found, -4043);
+			l_compile_id						varchar2(1024);
+			l_npg_user							varchar2(1024) := sys_context('USERENV', 'CURRENT_SCHEMA');
+			l_npg_install						varchar2(1024) := sys_context('USERENV', 'SESSION_USER');
+			l_message								varchar2(4000);
+			l_result								integer;
 
 	begin
 
@@ -313,7 +274,31 @@ as
 			if npg.npg_files(i).file_name != 'order.install' then
 				if npg.npg_files(i).file_type not in ('package body', 'order file') then
 					l_d_cmd := 'drop ' || npg.npg_files(i).file_type || ' ' || l_object_name;
-					execute immediate l_d_cmd;
+
+					-- Create the temporary execution object.
+					l_compile_id := ninja_npg_utils.create_execute_object(npg.ninja_id, l_d_cmd);
+
+					-- Run the execute object.
+					ninja_npg_utils.run_execute_object(l_compile_id, npg.ninja_id, l_npg_install, l_result, l_message);
+
+					ninja_npg_utils.log_entry(npg.ninja_id, l_compile_id || ' signalled: ' || l_message);
+
+					if l_result = 1 then
+						-- Timeout happened. Consider failed. Alert about rollback failure.
+						null;
+					elsif l_result = 0 then
+						-- We got the message back. Check the status.
+						if l_message = '1' then
+							-- Success.
+							ninja_npg_utils.log_entry(npg.ninja_id, npg.npg_files(i).file_type || ' ' || l_object_name || ' rolled back successfully.');
+						else
+							-- Something went wrong with rollback.
+							ninja_npg_utils.log_entry(npg.ninja_id, npg.npg_files(i).file_type || ' ' || l_object_name || ' rollback failed.');
+						end if;
+					end if;
+
+					-- Cleanup
+					ninja_npg_utils.clear_completed_execute_object(l_compile_id);
 				end if;
 			end if;
 		end loop;
