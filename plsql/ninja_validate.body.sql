@@ -124,7 +124,6 @@ as
 		select username
 		into l_tst
 		from user_users;
-		dbms_output.put_line('Running as ' || l_tst);
 
 		-- Catch object_type for known objects where we have to select in all_users instead.
 		if upper(obj_type) in ('CONTEXT') then

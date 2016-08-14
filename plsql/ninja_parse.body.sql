@@ -171,7 +171,9 @@ as
 			if not l_required_parsed(l_required_idx) then
 				ninja_npg_utils.log_entry(npg.ninja_id, 'Missing field in npg.spec: ' || l_required_idx);
 				ninja_npg_utils.log_entry(npg.ninja_id, 'Aborting installation.');
-				raise_application_error(-20001, 'Missing field in npg.spec: ' || l_required_idx);
+				if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+					raise_application_error(-20001, 'Missing field in npg.spec: ' || l_required_idx);
+				end if;
 			end if;
 			l_required_idx := l_required_parsed.next(l_required_idx);
 		end loop;
@@ -210,7 +212,9 @@ as
 			dbms_application_info.set_action(null);
 			ninja_npg_utils.log_entry(npg.ninja_id, 'Invalid NPG format: No npg.spec present.');
 			ninja_npg_utils.log_entry(npg.ninja_id, 'Aborting installation.');
-			raise_application_error(-20001, 'Invalid NPG format: No npg.spec present');
+			if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+				raise_application_error(-20001, 'Invalid NPG format: No npg.spec present');
+			end if;
 		end if;
 
 		-- Spec file is there, so let us parse it.
@@ -227,7 +231,9 @@ as
 				npg.npg_files(i).file_content := ninja_npg_utils.blob_to_clob(l_individual_file);
 			else
 				ninja_npg_utils.log_entry(npg.ninja_id, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
-				raise_application_error(-20001, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
+				if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+					raise_application_error(-20001, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
+				end if;
 			end if;
 		end loop;
 
@@ -263,7 +269,9 @@ as
 				if not ninja_validate.sys_priv_check(npg.requirements(i).require_value) then
 					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
-					raise_application_error(-20001, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
+					if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+						raise_application_error(-20001, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
+					end if;
 				else
 					npg.requirements(i).require_met := 1;
 				end if;
@@ -271,7 +279,9 @@ as
 				if ninja_validate.db_version_check(npg.requirements(i).require_value) then
 					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
-					raise_application_error(-20001, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
+					if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+						raise_application_error(-20001, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
+					end if;
 				else
 					npg.requirements(i).require_met := 1;
 				end if;
@@ -279,7 +289,9 @@ as
 				if not ninja_validate.can_execute(npg.requirements(i).require_value) then
 					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
-					raise_application_error(-20001, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
+					if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+						raise_application_error(-20001, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
+					end if;
 				else
 					npg.requirements(i).require_met := 1;
 				end if;

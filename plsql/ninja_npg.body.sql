@@ -274,7 +274,9 @@ as
 				ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Package ' || package_name || ' installation failed. Rolling back install.', cli_generated_id);
 				ninja_compile.rollback_npg(l_ninja_npg);
 				-- We have rolled back. Raise exception to inform about failure.
-				raise_application_error(-20001, 'Installation failed. Rollback initiated.');
+				if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+					raise_application_error(-20001, 'Installation failed. Rollback initiated.');
+				end if;
 			else
 				-- Sources are installed successfully. Register installed package
 				ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Sources compiled without errors.', cli_generated_id);
@@ -285,7 +287,9 @@ as
 		else
 			-- Already installed. Use update instead
 			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Package ' || package_name || ' already installed. Please use update instead.', cli_generated_id);
-			raise_application_error(-20001, 'Already installed. Use update_p.');
+			if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+				raise_application_error(-20001, 'Already installed. Use update_p.');
+			end if;
 		end if;
 
 		dbms_application_info.set_action(null);
