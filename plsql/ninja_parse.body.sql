@@ -33,6 +33,9 @@ as
 		l_required_parsed				l_bool_table;
 		l_required_idx					varchar2(50);
 
+		-- Runtime settings
+		l_installto							varchar2(128) := sys_context('USERENV', 'SESSION_USER');
+
 		-- Exception
 		missing_required				exception;
 		pragma									exception_init(missing_required, -20001);
@@ -178,6 +181,10 @@ as
 			l_required_idx := l_required_parsed.next(l_required_idx);
 		end loop;
 
+		-- Now we can set runtime parameters.
+		npg.npg_runtime.install_to := l_installto;
+		npg.npg_runtime.requirement_failed := 0;
+
 		ninja_npg_utils.log_entry(npg.ninja_id, 'Parse done. All required fields present in spec file.');
 
 		dbms_application_info.set_action(null);
@@ -212,6 +219,7 @@ as
 			dbms_application_info.set_action(null);
 			ninja_npg_utils.log_entry(npg.ninja_id, 'Invalid NPG format: No npg.spec present.');
 			ninja_npg_utils.log_entry(npg.ninja_id, 'Aborting installation.');
+			npg.npg_runtime.requirement_failed := -1;
 			if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
 				raise_application_error(-20001, 'Invalid NPG format: No npg.spec present');
 			end if;
@@ -231,6 +239,7 @@ as
 				npg.npg_files(i).file_content := ninja_npg_utils.blob_to_clob(l_individual_file);
 			else
 				ninja_npg_utils.log_entry(npg.ninja_id, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
+				npg.npg_runtime.requirement_failed := -1;
 				if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
 					raise_application_error(-20001, 'File present in spec, but not in data: ' || npg.npg_files(i).file_name);
 				end if;
@@ -268,6 +277,7 @@ as
 			if npg.requirements(i).require_type = 'privilege' then
 				if not ninja_validate.sys_priv_check(npg.requirements(i).require_value) then
 					npg.requirements(i).require_met := -1;
+					npg.npg_runtime.requirement_failed := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
 					if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
 						raise_application_error(-20001, 'Privilege ' || npg.requirements(i).require_value || ' not granted.');
@@ -278,6 +288,7 @@ as
 			elsif npg.requirements(i).require_type = 'ordbms' then
 				if ninja_validate.db_version_check(npg.requirements(i).require_value) then
 					npg.requirements(i).require_met := -1;
+					npg.npg_runtime.requirement_failed := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
 					if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
 						raise_application_error(-20001, 'Ordbms version: ' || npg.requirements(i).require_value || ' not met.');
@@ -289,6 +300,7 @@ as
 				if not ninja_validate.can_execute(npg.requirements(i).require_value) then
 					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
+					npg.npg_runtime.requirement_failed := -1;
 					if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
 						raise_application_error(-20001, 'Execute privilege on: ' || npg.requirements(i).require_value ||' not met.');
 					end if;
@@ -304,6 +316,7 @@ as
 					-- NPG package requirement not met. Check if we can install.
 					npg.requirements(i).require_met := -1;
 					ninja_npg_utils.log_entry(npg.ninja_id, 'NPG package requirement for ' || npg.requirements(i).require_value ||' not met.');
+					npg.npg_runtime.requirement_failed := -1;
 					-- For packages we do not throw an error. We will first check other place if we can install those packages, and if not then
 					-- we throw error.
 				else

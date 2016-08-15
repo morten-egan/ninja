@@ -11,3 +11,8 @@ grant create any job to &1;
 grant execute on dbms_crypto to &1;
 grant execute on dbms_alert to &1;
 grant execute on utl_http to &1;
+grant select on dba_tab_privs to &1;
+grant select on dba_sys_privs to &1;
+grant select on dba_role_privs to &1;
+
+alter user &1 account lock;

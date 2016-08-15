@@ -35,6 +35,7 @@ as
 	*/
 	function sys_priv_check (
 		sys_priv									in				varchar2
+		, sys_priv_user						in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 	return boolean;
 
@@ -67,6 +68,7 @@ as
 	*/
 	function can_execute (
 		package_name							in				varchar2
+		, pkg_priv_user						in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 	return boolean;
 
@@ -77,6 +79,7 @@ as
 	*/
 	function npg_require (
 		require_string						in				varchar2
+		, pkg_priv_user						in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 	return boolean;
 

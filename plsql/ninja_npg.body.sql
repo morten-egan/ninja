@@ -232,6 +232,7 @@ as
 		l_ninja_npg							ninja_parse.ninja_package;
 		l_ninja_binary					blob;
 		l_ninja_id							varchar2(1024) := sys_guid();
+		l_installto							varchar2(128) := sys_context('USERENV', 'SESSION_USER');
 
 		-- Exception
 		install_failed					exception;
@@ -245,7 +246,7 @@ as
 		l_ninja_npg.ninja_id := l_ninja_id;
 
 		ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Starting installation of: ' || package_name, cli_generated_id);
-		ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Session user is: ' || sys_context('USERENV', 'SESSION_USER'), cli_generated_id);
+		ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Session user is: ' || l_installto, cli_generated_id);
 
 		-- First we check if the package is already installed, and if it is,
 		-- inform that we should be using update instead.
@@ -258,31 +259,51 @@ as
 			-- Unpack the spec file into the npg type
 			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Unpacking npg zip file.', cli_generated_id);
 			ninja_parse.unpack_binary_npg(l_ninja_binary, l_ninja_npg);
-			-- Now the spec file is unpackd, and we have the basic npg structure.
-			-- Let us validate requirements
-			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Validating NPG requirements.', cli_generated_id);
-			ninja_parse.validate_package(l_ninja_npg);
-			-- Requirements are validated. Now check if we need to install extra packages.
-			ninja_npg.recursive_iu(l_ninja_npg, repository, cli_generated_id);
-			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'All NPG requirements validated.', cli_generated_id);
-			-- All requirements are validated or fixed. Let us install the package
-			ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Compiling sources.', cli_generated_id);
-			ninja_compile.compile_npg(l_ninja_npg);
-			-- Let us check if the compilation was successfull. If not rollback.
-			if l_ninja_npg.package_meta.pg_install_status < 0 then
-				-- We failed in the install. Let us rollback the installation.
+			-- From here we need to check in each step if we are ok. If not break installation.
+			if l_ninja_npg.npg_runtime.requirement_failed < 0 then
+				-- Something failed in the unpacking of the NPG binary. Rollback.
+				ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Failure in binary unpack.');
 				ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Package ' || package_name || ' installation failed. Rolling back install.', cli_generated_id);
 				ninja_compile.rollback_npg(l_ninja_npg);
-				-- We have rolled back. Raise exception to inform about failure.
 				if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
 					raise_application_error(-20001, 'Installation failed. Rollback initiated.');
 				end if;
 			else
-				-- Sources are installed successfully. Register installed package
-				ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Sources compiled without errors.', cli_generated_id);
-				ninja_register.register_install(l_ninja_npg);
-				-- Notify of success.
-				ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, '1 NPG installed successfully.', cli_generated_id);
+				-- Now the spec file is unpackd, and we have the basic npg structure.
+				-- Let us validate requirements
+				ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Validating NPG requirements.', cli_generated_id);
+				ninja_parse.validate_package(l_ninja_npg);
+				-- Here we to check if all requirements are validated and if not we break the installation.
+				if l_ninja_npg.npg_runtime.requirement_failed < 0 then
+					-- Requirements validation failed. We are rolling back.
+					ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Requirement validation failed.', cli_generated_id);
+					if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+						raise_application_error(-20001, 'Installation failed. Rollback initiated.');
+					end if;
+				else
+					-- Requirements are validated. Now check if we need to install extra packages.
+					ninja_npg.recursive_iu(l_ninja_npg, repository, cli_generated_id);
+					ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'All NPG requirements validated.', cli_generated_id);
+					-- All requirements are validated or fixed. Let us install the package
+					ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Compiling sources.', cli_generated_id);
+					ninja_compile.compile_npg(l_ninja_npg);
+					-- Let us check if the compilation was successfull. If not rollback.
+					if l_ninja_npg.package_meta.pg_install_status < 0 then
+						-- We failed in the install. Let us rollback the installation.
+						ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Package ' || package_name || ' installation failed. Rolling back install.', cli_generated_id);
+						ninja_compile.rollback_npg(l_ninja_npg);
+						-- We have rolled back. Raise exception to inform about failure.
+						if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+							raise_application_error(-20001, 'Installation failed. Rollback initiated.');
+						end if;
+					else
+						-- Sources are installed successfully. Register installed package
+						ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, 'Sources compiled without errors.', cli_generated_id);
+						ninja_register.register_install(l_ninja_npg);
+						-- Notify of success.
+						ninja_npg_utils.log_entry(l_ninja_npg.ninja_id, '1 NPG installed successfully.', cli_generated_id);
+					end if;
+				end if;
 			end if;
 		else
 			-- Already installed. Use update instead

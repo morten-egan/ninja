@@ -40,12 +40,19 @@ as
 	);
 	type pg_files is table of pg_file index by pls_integer;
 
+	type pg_runtime is record (
+		install_to						varchar2(128)
+		, cli_generated_id		varchar2(128)
+		, requirement_failed	number
+	);
+
 	type ninja_package is record (
 		ninja_id							varchar2(1024)
 		, npg_meta						ninja_meta
 		, package_meta				pg_meta
 		, requirements				pg_requirements
 		, npg_files						pg_files
+		, npg_runtime					pg_runtime
 	);
 
 	/** Will take the binary npg file, and extract to an npg package

@@ -68,13 +68,14 @@ as
 	end db_version_check;
 
 	function sys_priv_check (
-		sys_priv						in				varchar2
+		sys_priv									in				varchar2
+		, sys_priv_user						in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 	return boolean
 
 	as
 
-		l_ret_val			boolean := false;
+		l_ret_val				boolean := false;
 		l_priv_count		pls_integer := 0;
 
 	begin
@@ -85,8 +86,24 @@ as
 			count(*)
 		into
 			l_priv_count
-		from
-			session_privs
+		from (
+			select
+				*
+			from
+				dba_sys_privs
+			where
+				grantee = sys_priv_user
+			or
+				grantee in (
+					select
+						granted_role
+					from
+						dba_role_privs
+					connect by prior
+						granted_role = grantee
+					start with grantee = sys_priv_user
+				)
+		)
 		where
 			privilege = upper(sys_priv);
 
@@ -195,6 +212,7 @@ as
 
 	function can_execute (
 		package_name							in				varchar2
+		, pkg_priv_user						in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 	return boolean
 
@@ -209,9 +227,25 @@ as
 
 		select count(*)
 		into l_priv_count
-		from all_tab_privs
-		where type = 'PACKAGE'
-		and upper(table_name) = upper(package_name);
+		from (
+			select
+				*
+			from
+				dba_tab_privs
+			where
+				grantee = 'T'
+			or grantee in (
+				select
+					granted_role
+				from
+					dba_role_privs
+				connect by prior
+					granted_role = grantee
+				start with
+					grantee = 'T'
+			)
+		)
+		where upper(table_name) = upper(package_name);
 
 		if l_priv_count > 0 then
 			l_ret_var := true;
@@ -230,6 +264,7 @@ as
 
 	function npg_require (
 		require_string						in				varchar2
+		, pkg_priv_user						in				varchar2 default sys_context('USERENV', 'SESSION_USER')
 	)
 	return boolean
 
