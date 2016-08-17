@@ -131,7 +131,7 @@ as
 
 		-- Once we are done collating the source, we can calculate the hash value.
 		l_ret_var := rawtohex(dbms_crypto.hash(
-			src				=>		utl_raw.cast_to_raw(l_combined_source)
+			src				=>		l_combined_source
 			, typ			=>		dbms_crypto.hash_sh1
 		));
 
