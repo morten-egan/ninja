@@ -22,6 +22,7 @@ as
 		, pg_key							varchar2(4000)
 		, pg_order_file				number
 		, pg_install_status		number
+		, pg_readme_file			number
 	);
 
 	type pg_require is record (

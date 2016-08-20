@@ -147,6 +147,11 @@ as
 								ninja_npg_utils.log_entry(npg.ninja_id, 'install.order file found.');
 								npg.package_meta.pg_order_file := 1;
 							end if;
+							-- Check if readme.md, and if, set flag for now only.
+							-- Later versions will store readme for display.
+							if upper(l_line_name) = 'README.MD' then
+								npg.package_meta.pg_readme_file := 1;
+							end if;
 							l_files_idx := l_files_idx + 1;
 						end if;
 					end if;

@@ -86,12 +86,15 @@ as
 			l_object_name := npg.npg_files(file_id).file_name;
 		end if;
 
-		ninja_npg_utils.log_entry(npg.ninja_id, 'Before compilation of: ' || l_object_name);
-
-		-- execute immediate npg.npg_files(file_id).file_content;
-		initiate_compilation(npg, file_id, l_npg_install);
-
-		ninja_npg_utils.log_entry(npg.ninja_id, 'After compilation of: ' || l_object_name);
+		-- We need to check that the file we are compiling is not the install.order or the readme.md
+		if upper(trim(npg.npg_files(file_id).file_name)) in ('README.MD', 'INSTALL.ORDER') then
+			ninja_npg_utils.log_entry(npg.ninja_id, 'File: ' || npg.npg_files(file_id).file_name || ' is meta file and should not be compiled.');
+		else
+			ninja_npg_utils.log_entry(npg.ninja_id, 'Before compilation of: ' || l_object_name);
+			-- execute immediate npg.npg_files(file_id).file_content;
+			initiate_compilation(npg, file_id, l_npg_install);
+			ninja_npg_utils.log_entry(npg.ninja_id, 'After compilation of: ' || l_object_name);
+		end if;
 
 		--if ninja_validate.object_is_valid(l_object_name, npg.npg_files(file_id).file_type) then
 		--	l_ret_val := true;
