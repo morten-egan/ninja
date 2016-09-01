@@ -219,17 +219,29 @@ as
 
 	function create_execute_object (
 		n_id										in					varchar2
-		, c_cont								in					varchar2
+		, c_cont								in					clob
 	)
 	return varchar2
 
 	as
 
 	  l_ret_var               varchar2(100) := 'NPG' || substr(sys_guid(), 1, 24);
+		l_compile_slash					number := 0;
+		l_new_cont							clob := c_cont;
 
 	begin
 
 	  dbms_application_info.set_action('create_execute_object');
+
+		-- Just remove the compile slash, if it is there towards the end.
+		-- Let us assume that if there is no slash within the last 10
+		-- characters, it is not for compile if we find any. If it is within
+		-- 10 characters of the end we remove it.
+		l_compile_slash := instr(c_cont, '/', -1);
+		if l_compile_slash > length(c_cont) - 10 then
+			-- Assume that we should remove the compile slash.
+			l_new_cont := substr(l_new_cont, 1, l_compile_slash -1);
+		end if;
 
 		insert into ninja_compile_temp (
 			npg_id
@@ -239,7 +251,7 @@ as
 		) values (
 			n_id
 			, l_ret_var
-			, c_cont
+			, l_new_cont
 			, 0
 		);
 

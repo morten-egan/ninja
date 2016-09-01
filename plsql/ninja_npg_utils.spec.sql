@@ -83,7 +83,7 @@ as
 	*/
 	function create_execute_object (
 		n_id										in					varchar2
-		, c_cont								in					varchar2
+		, c_cont								in					clob
 	)
 	return varchar2;
 

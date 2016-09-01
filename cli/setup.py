@@ -11,7 +11,7 @@ executables = [
 ]
 
 setup(name='npg',
-      version = '1.0',
+      version = '0.0.1',
       description = 'CLI for PL/SQL NPG packages.',
       options = dict(build_exe = buildOptions),
       executables = executables)
