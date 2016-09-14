@@ -345,6 +345,70 @@ as
 
 	end validate_package;
 
+	function create_spec_file_from_record (
+		npg											in					ninja_package
+	)
+	return clob
+
+	as
+
+	  l_ret_var               clob := '[npgstart]' || chr(10);
+
+		procedure add_to_spec(
+			spec_key varchar2
+			, spec_val varchar2 default null
+		)
+	  as
+		begin
+			if spec_val is not null then
+				l_ret_var := l_ret_var || spec_key || ': ' || spec_val || chr(10);
+			end if;
+		end;
+
+	begin
+
+	  dbms_application_info.set_action('create_spec_file_from_record');
+
+		-- Options
+		l_ret_var := l_ret_var || '[options]' || chr(10);
+		add_to_spec('ninjaversion', npg.npg_meta.npg_version_major || '.' || npg.npg_meta.npg_version_minor || '.' || npg.npg_meta.npg_version_fix);
+		add_to_spec('ninjaformat', npg.npg_meta.npg_format);
+
+		-- Metadata
+		l_ret_var := l_ret_var || '[metadata]' || chr(10);
+		add_to_spec('name', npg.package_meta.pg_name);
+		add_to_spec('version', npg.package_meta.pg_version_major || '.' || npg.package_meta.pg_version_minor || '.' || npg.package_meta.pg_version_fix);
+		add_to_spec('author', npg.package_meta.pg_author);
+		add_to_spec('description', npg.package_meta.pg_description);
+		add_to_spec('builddate', npg.package_meta.pg_build_date);
+		add_to_spec('key', npg.package_meta.pg_key);
+
+		-- Require
+		l_ret_var := l_ret_var || '[require]' || chr(10);
+		for i in 1..npg.requirements.count() loop
+			add_to_spec(npg.requirements(i).require_type, npg.requirements(i).require_value);
+		end loop;
+
+		-- Files
+		l_ret_var := l_ret_var || '[files]' || chr(10);
+		for i in 1..npg.npg_files.count() loop
+			add_to_spec(npg.npg_files(i).file_name, npg.npg_files(i).file_type);
+		end loop;
+
+		-- Finalize
+		l_ret_var := l_ret_var || '[npgend]' || chr(10);
+
+	  dbms_application_info.set_action(null);
+
+	  return l_ret_var;
+
+	  exception
+	    when others then
+	      dbms_application_info.set_action(null);
+	      raise;
+
+	end create_spec_file_from_record;
+
 begin
 
 	dbms_application_info.set_client_info('ninja_parse');

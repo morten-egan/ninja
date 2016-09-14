@@ -78,5 +78,14 @@ as
 		, npg									in out			ninja_package
 	);
 
+	/** Create an npg.spec file from a ninja_package record.
+	* @author Morten Egan
+	* @return clob The npg.spec file contents.
+	*/
+	function create_spec_file_from_record (
+		npg										in					ninja_package
+	)
+	return clob;
+
 end ninja_parse;
 /

@@ -42,6 +42,9 @@ as
           l_obj_name_cleaned := objs.obj_name;
         end if;
         l_obj_sql_drop := 'drop ' || objs.obj_type || ' ' || l_obj_name_cleaned;
+        if objs.obj_type = 'type' then
+          l_obj_sql_drop := l_obj_sql_drop || ' force';
+        end if;
         -- Create temp holder for drop command.
         l_compile_id := ninja_npg_utils.create_execute_object('delete_op', l_obj_sql_drop);
 
