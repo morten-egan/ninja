@@ -76,6 +76,7 @@ as
 	procedure parse_spec_file (
 		spec_file							in					clob
 		, npg									in out			ninja_package
+		, require_parms				in					boolean default true
 	);
 
 	/** Create an npg.spec file from a ninja_package record.

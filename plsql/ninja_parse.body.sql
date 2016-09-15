@@ -3,8 +3,9 @@ create or replace package body ninja_parse
 as
 
 	procedure parse_spec_file (
-		spec_file						in					clob
-		, npg								in out			ninja_package
+		spec_file							in					clob
+		, npg									in out			ninja_package
+		, require_parms				in					boolean default true
 	)
 
 	as
@@ -44,20 +45,22 @@ as
 
 		dbms_application_info.set_action('parse_spec_file');
 
-		-- Set required fields to false
-		l_required_parsed('options') := false;
-		-- Options sub fields
-		l_required_parsed('ninjaversion') := false;
-		l_required_parsed('ninjaformat') := false;
-		l_required_parsed('metadata') := false;
-		-- Metadata sub fields
-		l_required_parsed('name') := false;
-		l_required_parsed('version') := false;
-		l_required_parsed('description') := false;
-		l_required_parsed('author') := false;
-		-- Require sub fields
-		l_required_parsed('ordbms') := false;
-		l_required_parsed('files') := false;
+		if require_parms then
+			-- Set required fields to false
+			l_required_parsed('options') := false;
+			-- Options sub fields
+			l_required_parsed('ninjaversion') := false;
+			l_required_parsed('ninjaformat') := false;
+			l_required_parsed('metadata') := false;
+			-- Metadata sub fields
+			l_required_parsed('name') := false;
+			l_required_parsed('version') := false;
+			l_required_parsed('description') := false;
+			l_required_parsed('author') := false;
+			-- Require sub fields
+			l_required_parsed('ordbms') := false;
+			l_required_parsed('files') := false;
+		end if;
 
 		-- Loop over all lines
 		while l_offset < l_len loop
@@ -172,18 +175,20 @@ as
 		-- Set fixed attributes
 		npg.package_meta.pg_install_status := 0;
 
-		-- Check that all required fields are present in the spec file
-		l_required_idx := l_required_parsed.first;
-		while l_required_idx is not null loop
-			if not l_required_parsed(l_required_idx) then
-				ninja_npg_utils.log_entry(npg.ninja_id, 'Missing field in npg.spec: ' || l_required_idx);
-				ninja_npg_utils.log_entry(npg.ninja_id, 'Aborting installation.');
-				if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
-					raise_application_error(-20001, 'Missing field in npg.spec: ' || l_required_idx);
+		if require_parms then
+			-- Check that all required fields are present in the spec file
+			l_required_idx := l_required_parsed.first;
+			while l_required_idx is not null loop
+				if not l_required_parsed(l_required_idx) then
+					ninja_npg_utils.log_entry(npg.ninja_id, 'Missing field in npg.spec: ' || l_required_idx);
+					ninja_npg_utils.log_entry(npg.ninja_id, 'Aborting installation.');
+					if ninja_npg_utils.ninja_setting('raise_on_install') = 'true' then
+						raise_application_error(-20001, 'Missing field in npg.spec: ' || l_required_idx);
+					end if;
 				end if;
-			end if;
-			l_required_idx := l_required_parsed.next(l_required_idx);
-		end loop;
+				l_required_idx := l_required_parsed.next(l_required_idx);
+			end loop;
+		end if;
 
 		-- Now we can set runtime parameters.
 		npg.npg_runtime.install_to := l_installto;
